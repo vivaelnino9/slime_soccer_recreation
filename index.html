@@ -6,13 +6,13 @@
 <body>
   <section>
     <div>
-      <canvas id="canvas" height="400" width="1000" style="position: absolute;display:block;margin:20px auto;border:1px solid #666;">
+      <canvas id="canvas" height="600" width="1400" style="position: absolute;display:block;margin:20px auto;border:1px solid #666;">
         Get a better browser!</canvas>
-      <canvas id="myCanvas" height="400" width="1000" style="position: absolute;margin:21px auto;"></canvas>
+      <canvas id="myCanvas" height="600" width="1400" style="position: absolute;margin:21px auto;"></canvas>
     </div>
     <script type="text/javascript">
-      var width = 1000;
-      var height = 400;
+      var WIDTH = 1400;
+      var HEIGHT = 600;
       var canvas = ctx = ui= false;
       var frameRate = 1/40; // Seconds
       var frameDelay = frameRate * 1000; // ms
@@ -32,16 +32,17 @@
       * lead ball: mass 10, restitution -0.05
       */
       var ball = {
-        position: {x: width/2, y: 0},
-        velocity: {x: 10, y: 0},
+        position: {x: WIDTH/2, y: 0},
+        velocity: {x: 0, y: 0},
         mass: 0.1, //kg
         radius: 15, // 1px = 1cm
-        restitution: -0.7
-        };
+        restitution: -1
+      };
+
       var Cd = 0.47;  // Dimensionless
       var rho = 1.22; // kg / m^3
       var A = Math.PI * ball.radius * ball.radius / (10000); // m^2
-      var ag = 1.6;  // m / s^2
+      var ag = 9.81;  // m / s^2
       var mouse = {x: 0, y: 0, isDown: false};
 
       // function getMousePosition(e) {
@@ -102,13 +103,13 @@
             ball.position.y += ball.velocity.y*frameRate*100;
         }
         // Handle collisions
-        if (ball.position.y > height - ball.radius) {
+        if (ball.position.y > HEIGHT - ball.radius) {
             ball.velocity.y *= ball.restitution;
-            ball.position.y = height - ball.radius;
+            ball.position.y = HEIGHT - ball.radius;
         }
-        if (ball.position.x > width - ball.radius) {
+        if (ball.position.x > WIDTH - ball.radius) {
             ball.velocity.x *= ball.restitution;
-            ball.position.x = width - ball.radius;
+            ball.position.x = WIDTH - ball.radius;
         }
         if (ball.position.x < ball.radius) {
             ball.velocity.x *= ball.restitution;
@@ -117,7 +118,7 @@
         // Draw the ball
 
 
-        ctx.clearRect(0,0,width,height);
+        ctx.clearRect(0,0,WIDTH,HEIGHT);
 
         ctx.save();
 
@@ -129,7 +130,7 @@
 
         ctx.restore();
         ctxUi.beginPath();
-        ctxUi.arc(250, 400, 50, 0, Math.PI, true);
+        ctxUi.arc(250, 600, 50, 0, Math.PI, true);
         ctxUi.closePath();
         ctxUi.lineWidth = 5;
         ctxUi.fillStyle = 'blue';
