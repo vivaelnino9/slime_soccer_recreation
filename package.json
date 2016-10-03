@@ -1,0 +1,19 @@
+{
+  "name": "slime_soccer",
+  "version": "1.0.0",
+  "description": "My attempt at a recreation of the game [Slime Soccer World Cup](http://slimegames.eu)",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vivaelnino9/slime_soccer_recreation.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vivaelnino9/slime_soccer_recreation/issues"
+  },
+  "homepage": "https://github.com/vivaelnino9/slime_soccer_recreation#readme"
+}

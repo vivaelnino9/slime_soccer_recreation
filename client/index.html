@@ -1,0 +1,177 @@
+<!doctype html>
+<html>
+<meta charset="UTF-8" />
+<title>Slime Soccer</title>
+</head>
+<body>
+  <section>
+    <div>
+      <canvas id="ctx" width="1400" height="600" style="position: absolute;display:block; auto;border:1px solid #666;">
+        Get a better browser!</canvas>
+      <canvas id="ctx-ui" width="1400" height="600" style="position: absolute; auto;"></canvas>
+    </div>
+    <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+    <script type="text/javascript">
+    /* Burak Kanber */
+    var WIDTH = 1400;
+    var HEIGHT = 600;
+    var canvas = ctx = false;
+    var frameRate = 1/40; // Seconds
+    var frameDelay = frameRate * 1000; // ms
+    var loopTimer = false;
+    var socket = io();
+    /*
+    * Experiment with values of mass, radius, restitution,
+    * gravity (ag), and density (rho)!
+    *
+    * Changing the constants literally changes the environment
+    * the ball is in.
+    *
+    * Some settings to try:
+    * the moon: ag = 1.6
+    * water: rho = 1000, mass 5
+    * beach ball: mass 0.05, radius 30
+    * lead ball: mass 10, restitution -0.05
+    */
+    var ball = {
+      position: {x: WIDTH/2, y: 15},
+      velocity: {x: 0, y: 0},
+      mass: 0.1, //kg
+      radius: 15, // 1px = 1cm
+      restitution: -0.7
+      };
+
+    var Cd = 0.47;  // Dimensionless
+    var rho = 1.22; // kg / m^3
+    var A = Math.PI * ball.radius * ball.radius / (10000); // m^2
+    var ag = 9.81;  // m / s^2
+    var mouse = {x: 0, y: 0, isDown: false};
+
+    function getMousePosition(e) {
+      mouse.x = e.pageX - canvas.offsetLeft;
+      mouse.y = e.pageY - canvas.offsetTop;
+    }
+    var mouseDown = function(e) {
+      if (e.which == 1) {
+          getMousePosition(e);
+          mouse.isDown = true;
+          ball.position.x = mouse.x;
+          ball.position.y = mouse.y;
+      }
+    }
+    var mouseUp = function(e) {
+      if (e.which == 1) {
+          mouse.isDown = false;
+          ball.velocity.y = (ball.position.y - mouse.y) /10;
+          ball.velocity.x = (ball.position.x - mouse.x) / 10;
+      }
+    }
+
+    var setup = function() {
+      ctx = document.getElementById("ctx").getContext("2d");
+      ctxUi = document.getElementById("ctx-ui").getContext("2d");
+
+
+      loopTimer = setInterval(loop, frameDelay);
+    }
+    var loop = function() {
+      if ( ! mouse.isDown) {
+          // Do physics
+              // Drag force: Fd = -1/2 * Cd * A * rho * v * v
+          var Fx = -0.5 * Cd * A * rho * ball.velocity.x * ball.velocity.x * ball.velocity.x / Math.abs(ball.velocity.x);
+          var Fy = -0.5 * Cd * A * rho * ball.velocity.y * ball.velocity.y * ball.velocity.y / Math.abs(ball.velocity.y);
+
+          Fx = (isNaN(Fx) ? 0 : Fx);
+          Fy = (isNaN(Fy) ? 0 : Fy);
+
+              // Calculate acceleration ( F = ma )
+          var ax = Fx / ball.mass;
+          var ay = ag + (Fy / ball.mass);
+              // Integrate to get velocity
+          ball.velocity.x += ax*frameRate;
+          ball.velocity.y += ay*frameRate;
+
+              // Integrate to get position
+          ball.position.x += ball.velocity.x*frameRate*100;
+          ball.position.y += ball.velocity.y*frameRate*100;
+      }
+      // Handle collisions
+      if (ball.position.y < ball.radius){
+          // Ball hitting ceiling
+          ball.velocity.y *= ball.restitution;
+          ball.position.y = ball.radius;
+      }
+      if (ball.position.y > HEIGHT - ball.radius) {
+          // Ball hitting floor
+          ball.velocity.y *= ball.restitution;
+          ball.position.y = HEIGHT - ball.radius;
+      }
+      if (ball.position.x > WIDTH - ball.radius) {
+          // Ball hitting right wall
+          ball.velocity.x *= ball.restitution;
+          ball.position.x = WIDTH - ball.radius;
+      }
+      if (ball.position.x < ball.radius) {
+          // Ball hitting left wall
+          ball.velocity.x *= ball.restitution;
+          ball.position.x = ball.radius;
+      }
+      // Draw the ball
+
+      drawBall();
+    }
+    function drawBall(){
+      ctx.clearRect(0,0,WIDTH,HEIGHT);
+      ctx.save();
+      ctx.translate(ball.position.x, ball.position.y);
+      ctx.beginPath();
+      ctx.arc(0, 0, ball.radius, 0, Math.PI*2, true);
+      ctx.fillStyle = 'red';
+      ctx.fill();
+      ctx.closePath();
+      ctx.restore();
+    }
+    function drawPlayer(x,y){
+      ctxUi.beginPath();
+      ctxUi.arc(x, y, 55, 0, Math.PI, true);
+      ctxUi.closePath();
+      ctxUi.lineWidth = 5;
+      ctxUi.fillStyle = 'blue';
+      ctxUi.fill();
+      ctxUi.strokeStyle = 'blue';
+      ctxUi.stroke();
+    }
+
+    setup();
+    socket.on('newPositions',function(data){
+        ctx.clearRect(0,0,500,500);
+        for(var i = 0 ; i < data.length; i++){
+            ctxUi.clearRect(0,0,WIDTH,HEIGHT);
+            drawPlayer(data[i].x,data[i].y);
+        }
+    });
+    document.onkeydown = function(event){
+        if(event.keyCode === 68)    //d
+            socket.emit('keyPress',{inputId:'right',state:true});
+        else if(event.keyCode === 83)   //s
+            socket.emit('keyPress',{inputId:'down',state:true});
+        else if(event.keyCode === 65) //a
+            socket.emit('keyPress',{inputId:'left',state:true});
+        else if(event.keyCode === 87) // w
+            socket.emit('keyPress',{inputId:'up',state:true});
+
+    }
+    document.onkeyup = function(event){
+        if(event.keyCode === 68)    //d
+            socket.emit('keyPress',{inputId:'right',state:false});
+        else if(event.keyCode === 83)   //s
+            socket.emit('keyPress',{inputId:'down',state:false});
+        else if(event.keyCode === 65) //a
+            socket.emit('keyPress',{inputId:'left',state:false});
+        else if(event.keyCode === 87) // w
+            socket.emit('keyPress',{inputId:'up',state:false});
+    }
+    </script>
+  </section>
+</body>
+</html>
