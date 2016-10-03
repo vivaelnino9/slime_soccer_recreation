@@ -1,3 +1,3 @@
 #Slime Soccer Recreation
 
-My attempt at a recreation of the game [Slime Soccer World Cup](http://slimegames.eu) 
+My attempt at an online multiplayer recreation of the game [Slime Soccer World Cup](http://slimegames.eu) 
