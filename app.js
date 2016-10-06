@@ -11,7 +11,6 @@ serv.listen(2000);
 console.log("Server started.");
 
 var SOCKET_LIST = {};
-// var PLAYER_LIST = {};
 
 var WIDTH = 1400;
 var HEIGHT = 600;
@@ -62,10 +61,6 @@ var Player = function(param){
 		self.updateSpd();
 
 		super_update();
-
-		// if(self.pressingAttack){
-		// 	self.shootBullet(self.mouseAngle);
-		// }
 	}
 
   self.updateSpd = function(){
@@ -100,21 +95,6 @@ var Player = function(param){
 			score:self.score,
 		};
 	}
-
-  // self.updatePosition = function(){
-  //     if(self.pressingRight && self.x + self.maxSpd < WIDTH - self.radius)
-  //         self.x += self.maxSpd;
-  //     if(self.pressingLeft && self.x - self.maxSpd > self.radius)
-  //         self.x -= self.maxSpd;
-  //     if(self.jump && self.y - self.maxSpd > self.radius)
-  //         self.y -= self.maxSpd;
-  //     if(self.pressingDown && self.y + self.maxSpd < HEIGHT + 1)
-  //         self.y += self.maxSpd;
-  //     if(self.up)
-  //         self.y -= self.maxSpd;
-  //     if (self.down && !self.ground)
-  //         self.y += self.maxSpd;
-  // }
 
   Player.list[self.id] = self;
 
