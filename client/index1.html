@@ -152,6 +152,14 @@
         ctxUi.stroke();
         // console.log(player.position.x);
       }
+      setup();
+      socket.on('newPositions',function(data){
+          ctx.clearRect(0,0,500,500);
+          for(var i = 0 ; i < data.length; i++){
+              ctxUi.clearRect(0,0,WIDTH,HEIGHT);
+              drawPlayer(data[i].x,data[i].y);
+          }
+      });
 
         setup();
     </script>

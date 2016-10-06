@@ -12,15 +12,27 @@
 </head>
 <body>
   <section>
-    <div>
-      <canvas id="ctx" width="1400" height="600" style="position: absolute;display:block; auto;border:1px solid #666;">
-        Get a better browser!</canvas>
-      <canvas id="ctx-ui" width="1400" height="600" style="position: absolute;display:block; auto;border:1px solid #666;"></canvas>
-      <!-- <p style="font-size: 50px;margin: 300px 700px 300px 650px; position: absolute;">PLAY!</p> -->
+    <div id="gameDiv">
+    	<div id="game">
+        <canvas id="ctx" width="1400" height="600" style="position: absolute;display:block; auto;border:1px solid #666;">
+          Get a better browser!</canvas>
+        <canvas id="ctx-ui" width="1400" height="600" style="position: absolute;display:block; auto;border:1px solid #666;"></canvas>
+        <!-- <p style="font-size: 50px;margin: 300px 700px 300px 650px; position: absolute;">PLAY!</p> -->
+      </div>
+      <!-- <div id="belowGame">
+		    <div id="chat-text">
+			    <div>Hello! This game is more fun with friends!</div>
+		    </div>
+
+		    <form id="chat-form">
+			    <input id="chat-input" type="text" placeholder="Type here to chat!"></input>
+		    </form>
+	    </div> -->
     </div>
-    <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
-    <script type="text/javascript">
-    /* Burak Kanber */
+    <!-- <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script> -->
+    <script src="/client/socket.js"></script>
+    <script>
+    //
     var WIDTH = 1400;
     var HEIGHT = 600;
     var canvas = ctx = false;
@@ -28,25 +40,37 @@
     var frameDelay = frameRate * 1000; // ms
     var loopTimer = false;
     var socket = io();
-    /*
-    * Experiment with values of mass, radius, restitution,
-    * gravity (ag), and density (rho)!
-    *
-    * Changing the constants literally changes the environment
-    * the ball is in.
-    *
-    * Some settings to try:
-    * the moon: ag = 1.6
-    * water: rho = 1000, mass 5
-    * beach ball: mass 0.05, radius 30
-    * lead ball: mass 10, restitution -0.05
-    */
+
+    // chat
+    // var chatText = document.getElementById('chat-text');
+  	// var chatInput = document.getElementById('chat-input');
+  	// var chatForm = document.getElementById('chat-form');
+    //
+  	// socket.on('addToChat',function(data){
+  	// 	chatText.innerHTML += '<div>' + data + '</div>';
+  	// });
+  	// socket.on('evalAnswer',function(data){
+  	// 	console.log(data);
+  	// });
+    //
+    //
+  	// chatForm.onsubmit = function(e){
+  	// 	e.preventDefault();
+  	// 	if(chatInput.value[0] === '/')
+  	// 		socket.emit('evalServer',chatInput.value.slice(1));
+  	// 	else{
+  	// 		socket.emit('sendMsgToServer',{value:chatInput.value,name:username,});
+  	// 	}
+  	// 	chatInput.value = '';
+  	// }
+
+    //game
     var ball = {
       position: {x: WIDTH/2, y: 15},
-      velocity: {x: 0, y: 0},
+      velocity: {x: 20, y: 0},
       mass: 0.1, //kg
       radius: 15, // 1px = 1cm
-      restitution: -0.7
+      restitution: -1,
       };
 
     var Cd = 0.47;  // Dimensionless
@@ -55,78 +79,104 @@
     var ag = 9.81;  // m / s^2
     var mouse = {x: 0, y: 0, isDown: false};
 
-    function getMousePosition(e) {
-      mouse.x = e.pageX - canvas.offsetLeft;
-      mouse.y = e.pageY - canvas.offsetTop;
-    }
-    var mouseDown = function(e) {
-      if (e.which == 1) {
-          getMousePosition(e);
-          mouse.isDown = true;
-          ball.position.x = mouse.x;
-          ball.position.y = mouse.y;
-      }
-    }
-    var mouseUp = function(e) {
-      if (e.which == 1) {
-          mouse.isDown = false;
-          ball.velocity.y = (ball.position.y - mouse.y) /10;
-          ball.velocity.x = (ball.position.x - mouse.x) / 10;
-      }
-    }
+    ctx = document.getElementById("ctx").getContext("2d");
+    ctxUi = document.getElementById("ctx-ui").getContext("2d");
 
-    var setup = function() {
-      ctx = document.getElementById("ctx").getContext("2d");
-      ctxUi = document.getElementById("ctx-ui").getContext("2d");
+    var Player = function(initPack){
+  		var self = {};
+  		self.id = initPack.id;
+  		self.x = initPack.x;
+  		self.y = initPack.y;
+  		self.score = initPack.score;
 
+      self.draw = function(){
+        ctxUi.clearRect(0,0,WIDTH,HEIGHT);
+  			// var x = self.x - Player.list[selfId].x + WIDTH/2;
+  			// var y = self.y - Player.list[selfId].y + HEIGHT/2;
+        var x = self.x
+        var y = self.y
+  		  drawPlayer(x,y);
+		}
+    Player.list[self.id] = self;
 
-      loopTimer = setInterval(loop, frameDelay);
+		return self;
     }
-    var loop = function() {
-      // Do physics
-      // Drag force: Fd = -1/2 * Cd * A * rho * v * v
+    Player.list = {};
+
+    var selfId = null;
+
+    socket.on('init',function(data){
+		if(data.selfId)
+			selfId = data.selfId;
+		  for(var i = 0 ; i < data.player.length; i++){
+			  new Player(data.player[i]);
+		  }
+	  });
+    socket.on('update',function(data){
+  		for(var i = 0 ; i < data.player.length; i++){
+  			var pack = data.player[i];
+  			var p = Player.list[pack.id];
+  			if(p){
+  				if(pack.x !== undefined)
+  					p.x = pack.x;
+  				if(pack.y !== undefined)
+  					p.y = pack.y;
+  				if(pack.score !== undefined)
+  					p.score = pack.score;
+  			}
+  		}
+    });
+
+    socket.on('remove',function(data){
+  		for(var i = 0 ; i < data.player.length; i++){
+  			delete Player.list[data.player[i]];
+  		}
+  	});
+
+    setInterval(function(){
+  		if(!selfId)
+        return;
+      ballPhysics();
+  		drawBall();
+  		for(var i in Player.list)
+  			Player.list[i].draw();
+  	},40);
+
+    var ballPhysics = function(){
       var Fx = -0.5 * Cd * A * rho * ball.velocity.x * ball.velocity.x * ball.velocity.x / Math.abs(ball.velocity.x);
       var Fy = -0.5 * Cd * A * rho * ball.velocity.y * ball.velocity.y * ball.velocity.y / Math.abs(ball.velocity.y);
 
       Fx = (isNaN(Fx) ? 0 : Fx);
       Fy = (isNaN(Fy) ? 0 : Fy);
 
-      // Calculate acceleration ( F = ma )
       var ax = Fx / ball.mass;
       var ay = ag + (Fy / ball.mass);
-      // Integrate to get velocity
+
       ball.velocity.x += ax*frameRate;
       ball.velocity.y += ay*frameRate;
 
-      // Integrate to get position
+
       ball.position.x += ball.velocity.x*frameRate*100;
       ball.position.y += ball.velocity.y*frameRate*100;
-      // Handle collisions
+
       if (ball.position.y < ball.radius){
-          // Ball hitting ceiling
           ball.velocity.y *= ball.restitution;
           ball.position.y = ball.radius;
       }
       if (ball.position.y > HEIGHT - ball.radius) {
-          // Ball hitting floor
           ball.velocity.y *= ball.restitution;
           ball.position.y = HEIGHT - ball.radius;
       }
       if (ball.position.x > WIDTH - ball.radius) {
-          // Ball hitting right wall
           ball.velocity.x *= ball.restitution;
           ball.position.x = WIDTH - ball.radius;
       }
       if (ball.position.x < ball.radius) {
-          // Ball hitting left wall
           ball.velocity.x *= ball.restitution;
           ball.position.x = ball.radius;
       }
-      // Draw the ball
-
-      drawBall();
     }
-    function drawBall(){
+    var drawBall = function(){
       ctx.clearRect(0,0,WIDTH,HEIGHT);
       ctx.save();
       ctx.translate(ball.position.x, ball.position.y);
@@ -137,7 +187,7 @@
       ctx.closePath();
       ctx.restore();
     }
-    function drawPlayer(x,y){
+    var drawPlayer = function(x,y){
       ctxUi.beginPath();
       ctxUi.arc(x, y, 55, 0, Math.PI, true);
       ctxUi.closePath();
@@ -148,25 +198,17 @@
       ctxUi.stroke();
     }
 
-    setup();
-    socket.on('newPositions',function(data){
-        ctx.clearRect(0,0,500,500);
-        for(var i = 0 ; i < data.length; i++){
-            ctxUi.clearRect(0,0,WIDTH,HEIGHT);
-            drawPlayer(data[i].x,data[i].y);
-        }
-    });
     document.onkeydown = function(event){
         if(event.keyCode === 68)    //d
             socket.emit('keyPress',{inputId:'right',state:true});
         else if(event.keyCode === 65) //a
             socket.emit('keyPress',{inputId:'left',state:true});
-        else if(event.keyCode === 87) // w
-            socket.emit('keyPress',{inputId: 'jump', state:true});
         // else if(event.keyCode === 87) // w
-        //     socket.emit('keyPress',{inputId:'up', state:true});
-        // else if(event.keyCode === 83)	//s
-        //     socket.emit('keyPress',{inputId:'down', state:true})
+        //     socket.emit('keyPress',{inputId: 'jump', state:true});
+        else if(event.keyCode === 87) // w
+            socket.emit('keyPress',{inputId:'up', state:true});
+        else if(event.keyCode === 83)	//s
+            socket.emit('keyPress',{inputId:'down', state:true})
 
     }
     document.onkeyup = function(event){
@@ -174,12 +216,12 @@
             socket.emit('keyPress',{inputId:'right',state:false});
         else if(event.keyCode === 65) //a
             socket.emit('keyPress',{inputId:'left',state:false});
-        else if(event.keyCode === 87) // w
-            socket.emit('keyPress',{inputId: 'jump', state:false});
         // else if(event.keyCode === 87) // w
-        //     socket.emit('keyPress',{inputId:'up', state:false});
-        // else if(event.keyCode === 83)	//s
-        //     socket.emit('keyPress',{inputId:'down', state:false})
+        //     socket.emit('keyPress',{inputId: 'jump', state:false});
+        else if(event.keyCode === 87) // w
+            socket.emit('keyPress',{inputId:'up', state:false});
+        else if(event.keyCode === 83)	//s
+            socket.emit('keyPress',{inputId:'down', state:false})
     }
     </script>
   </section>
