@@ -25,8 +25,12 @@ var Player = function(id){
         number:"" + Math.floor(10 * Math.random()),
         pressingRight:false,
         pressingLeft:false,
-        pressingUp:false,
-        pressingDown:false,
+        jump:false,
+        // pressingUp:false,
+        // pressingDown:false,
+        // up:false,
+        // down:false,
+        // ground:true,
         maxSpd:10,
     }
     self.updatePosition = function(){
@@ -34,11 +38,14 @@ var Player = function(id){
             self.x += self.maxSpd;
         if(self.pressingLeft && self.x - self.maxSpd > self.radius)
             self.x -= self.maxSpd;
-        if(self.pressingUp)
+        if(self.jump && self.y - self.maxSpd > self.radius)
             self.y -= self.maxSpd;
-        if(self.pressingDown && self.y + self.maxSpd < HEIGHT)
-            self.y += self.maxSpd;
-
+        // if(self.pressingDown && self.y + self.maxSpd < HEIGHT + 1)
+        //     self.y += self.maxSpd;
+        // if(self.up)
+        //     self.y -= self.maxSpd;
+        // if (self.down && !self.ground)
+        //     self.y += self.maxSpd;
     }
     return self;
 }
@@ -60,12 +67,13 @@ io.sockets.on('connection', function(socket){
             player.pressingLeft = data.state;
         else if(data.inputId === 'right')
             player.pressingRight = data.state;
-        else if(data.inputId === 'up')
-            player.pressingUp = data.state;
-        else if(data.inputId === 'down')
-            player.pressingDown = data.state;
+        else if(data.inputId === 'jump')
+            player.jump = data.state;
+        // else if(data.inputId === 'up')
+        //     player.pressingUp = data.state;
+        // else if(data.inputId === 'down')
+        //     player.pressingDown = data.state;
     });
-
 
 });
 
@@ -84,8 +92,5 @@ setInterval(function(){
         var socket = SOCKET_LIST[i];
         socket.emit('newPositions',pack);
     }
-
-
-
 
 },1000/25);
