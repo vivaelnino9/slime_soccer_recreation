@@ -8,7 +8,7 @@
     <div>
       <canvas id="ctx" width="1400" height="600" style="position: absolute;display:block; auto;border:1px solid #666;">
         Get a better browser!</canvas>
-      <canvas id="ctx-ui" width="1400" height="600" style="position: absolute; auto;"></canvas>
+      <canvas id="ctx-ui" width="1400" height="600" style="position: absolute;display:block; auto;border:1px solid #666;"></canvas>
     </div>
     <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
     <script type="text/javascript">
@@ -75,26 +75,24 @@
       loopTimer = setInterval(loop, frameDelay);
     }
     var loop = function() {
-      if ( ! mouse.isDown) {
-          // Do physics
-              // Drag force: Fd = -1/2 * Cd * A * rho * v * v
-          var Fx = -0.5 * Cd * A * rho * ball.velocity.x * ball.velocity.x * ball.velocity.x / Math.abs(ball.velocity.x);
-          var Fy = -0.5 * Cd * A * rho * ball.velocity.y * ball.velocity.y * ball.velocity.y / Math.abs(ball.velocity.y);
+      // Do physics
+      // Drag force: Fd = -1/2 * Cd * A * rho * v * v
+      var Fx = -0.5 * Cd * A * rho * ball.velocity.x * ball.velocity.x * ball.velocity.x / Math.abs(ball.velocity.x);
+      var Fy = -0.5 * Cd * A * rho * ball.velocity.y * ball.velocity.y * ball.velocity.y / Math.abs(ball.velocity.y);
 
-          Fx = (isNaN(Fx) ? 0 : Fx);
-          Fy = (isNaN(Fy) ? 0 : Fy);
+      Fx = (isNaN(Fx) ? 0 : Fx);
+      Fy = (isNaN(Fy) ? 0 : Fy);
 
-              // Calculate acceleration ( F = ma )
-          var ax = Fx / ball.mass;
-          var ay = ag + (Fy / ball.mass);
-              // Integrate to get velocity
-          ball.velocity.x += ax*frameRate;
-          ball.velocity.y += ay*frameRate;
+      // Calculate acceleration ( F = ma )
+      var ax = Fx / ball.mass;
+      var ay = ag + (Fy / ball.mass);
+      // Integrate to get velocity
+      ball.velocity.x += ax*frameRate;
+      ball.velocity.y += ay*frameRate;
 
-              // Integrate to get position
-          ball.position.x += ball.velocity.x*frameRate*100;
-          ball.position.y += ball.velocity.y*frameRate*100;
-      }
+      // Integrate to get position
+      ball.position.x += ball.velocity.x*frameRate*100;
+      ball.position.y += ball.velocity.y*frameRate*100;
       // Handle collisions
       if (ball.position.y < ball.radius){
           // Ball hitting ceiling
@@ -153,23 +151,27 @@
     document.onkeydown = function(event){
         if(event.keyCode === 68)    //d
             socket.emit('keyPress',{inputId:'right',state:true});
-        else if(event.keyCode === 83)   //s
-            socket.emit('keyPress',{inputId:'down',state:true});
         else if(event.keyCode === 65) //a
             socket.emit('keyPress',{inputId:'left',state:true});
         else if(event.keyCode === 87) // w
-            socket.emit('keyPress',{inputId:'up',state:true});
+            socket.emit('keyPress',{inputId: 'jump', state:true});
+        // else if(event.keyCode === 87) // w
+        //     socket.emit('keyPress',{inputId:'up', state:true});
+        // else if(event.keyCode === 83)	//s
+        //     socket.emit('keyPress',{inputId:'down', state:true})
 
     }
     document.onkeyup = function(event){
         if(event.keyCode === 68)    //d
             socket.emit('keyPress',{inputId:'right',state:false});
-        else if(event.keyCode === 83)   //s
-            socket.emit('keyPress',{inputId:'down',state:false});
         else if(event.keyCode === 65) //a
             socket.emit('keyPress',{inputId:'left',state:false});
         else if(event.keyCode === 87) // w
-            socket.emit('keyPress',{inputId:'up',state:false});
+            socket.emit('keyPress',{inputId: 'jump', state:false});
+        // else if(event.keyCode === 87) // w
+        //     socket.emit('keyPress',{inputId:'up', state:false});
+        // else if(event.keyCode === 83)	//s
+        //     socket.emit('keyPress',{inputId:'down', state:false})
     }
     </script>
   </section>
