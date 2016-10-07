@@ -1,3 +1,6 @@
+var mongojs = require('mongojs');
+var db = mongojs('mongodb://lucas:rooney10@ds053166.mlab.com:53166/slimesoccer', ['account']);
+
 var express = require('express');
 var app = express();
 var serv = require('http').Server(app);
@@ -147,13 +150,59 @@ Player.update = function(){
 	return pack;
 }
 
-var DEBUG = true;
+// var DEBUG = true;
+
+var isValidPassword = function(data,cb){
+	// return cb(true);
+	db.account.find({username:data.username,password:data.password},function(err,res){
+		if(res.length > 0)
+			cb(true);
+		else
+			cb(false);
+	});
+}
+var isUsernameTaken = function(data,cb){
+	// return cb(false);
+
+	db.account.find({username:data.username},function(err,res){
+		if(res.length > 0 || data.username === "" )
+			cb(true);
+		else
+			cb(false);
+	});
+}
+var addUser = function(data,cb){
+	// return cb();
+	db.account.insert({username:data.username,password:data.password},function(err){
+		cb();
+	});
+}
 
 var io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
     socket.id = Math.random();
     SOCKET_LIST[socket.id] = socket;
-    Player.onConnect(socket);
+    socket.on('signIn',function(data){
+  		isValidPassword(data,function(res){
+  			if(res){
+  				Player.onConnect(socket);
+  				socket.emit('signInResponse',{success:true,username:data.username,});
+  			} else {
+  				socket.emit('signInResponse',{success:false});
+  			}
+  		});
+	});
+	socket.on('signUp',function(data){
+		isUsernameTaken(data,function(res){
+			if(res){
+				socket.emit('signUpResponse',{success:false});
+			} else {
+				addUser(data,function(){
+					socket.emit('signUpResponse',{success:true});
+				});
+			}
+		});
+	});
 
     socket.on('disconnect',function(){
         delete SOCKET_LIST[socket.id];

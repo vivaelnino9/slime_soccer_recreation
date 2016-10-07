@@ -12,7 +12,14 @@
 </head>
 <body>
   <section>
-    <div id="gameDiv">
+    <div id="signDiv">
+    	Username<br><input id="signDiv-username" type="text"></input><br>
+    	Password<br><input id="signDiv-password" type="password"></input><br>
+    	<button id="signDiv-signIn">Sign In</button>
+    	<button id="signDiv-signUp">Sign Up</button>
+    </div>
+
+    <div id="gameDiv" style="display:none;">
     	<div id="game">
         <canvas id="ctx" width="1400" height="600" style="position: absolute;display:block; auto;border:1px solid #666;">
           Get a better browser!</canvas>
@@ -29,19 +36,45 @@
 		    </form>
 	    </div> -->
     </div>
-    <!-- <script src="https://cdn.socket.io/socket.io-1.4.5.js"></script> -->
+<!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
     <script src="/client/socket.js"></script>
     <script>
+
     //
     var WIDTH = 1400;
     var HEIGHT = 600;
-    var canvas = ctx = false;
-    var frameRate = 1/40; // Seconds
-    var frameDelay = frameRate * 1000; // ms
-    var loopTimer = false;
     var socket = io();
 
-    // chat
+    //sign
+  	var signDiv = document.getElementById('signDiv');
+  	var signDivUsername = document.getElementById('signDiv-username');
+  	var signDivSignIn = document.getElementById('signDiv-signIn');
+  	var signDivSignUp = document.getElementById('signDiv-signUp');
+  	var signDivPassword = document.getElementById('signDiv-password');
+  	var username = null;
+
+  	signDivSignIn.onclick = function(){
+  		socket.emit('signIn',{username:signDivUsername.value,password:signDivPassword.value});
+  	}
+  	signDivSignUp.onclick = function(){
+  		socket.emit('signUp',{username:signDivUsername.value,password:signDivPassword.value});
+  	}
+  	socket.on('signInResponse',function(data){
+  		if(data.success){
+  			signDiv.style.display = 'none';
+  			gameDiv.style.display = 'inline-block';
+  			username = data.username;
+  		} else
+  			alert("Sign in unsuccessul.");
+  	});
+  	socket.on('signUpResponse',function(data){
+  		if(data.success){
+  			alert("Sign up successul.");
+  		} else
+  			alert("Sign up unsuccessul.");
+  	});
+
+    //chat
     // var chatText = document.getElementById('chat-text');
   	// var chatInput = document.getElementById('chat-input');
   	// var chatForm = document.getElementById('chat-form');
@@ -139,6 +172,9 @@
   		for(var i in Player.list)
   			Player.list[i].draw();
   	},40);
+
+    var frameRate = 1/40; // Seconds
+    var frameDelay = frameRate * 1000; // ms
 
     var ballPhysics = function(){
       var Fx = -0.5 * Cd * A * rho * ball.velocity.x * ball.velocity.x * ball.velocity.x / Math.abs(ball.velocity.x);
