@@ -35,7 +35,7 @@ var Entity = function(param){
 			self.id = param.id;
 	}
 
-	self.update = function(){
+  self.update = function(){
 		self.updatePosition();
 	}
 	self.updatePosition = function(){
@@ -115,13 +115,9 @@ Player.onConnect = function(socket){
 		else if(data.inputId === 'right')
 			player.pressingRight = data.state;
 		else if(data.inputId === 'up')
-			player.pressingUp = data.state;
+      player.pressingUp = data.state;
 		else if(data.inputId === 'down')
 			player.pressingDown = data.state;
-		else if(data.inputId === 'attack')
-			player.pressingAttack = data.state;
-		else if(data.inputId === 'mouseAngle')
-			player.mouseAngle = data.state;
 	});
 
   socket.emit('init',{
@@ -213,20 +209,6 @@ io.sockets.on('connection', function(socket){
   	// 		SOCKET_LIST[i].emit('addToChat',data.name + ': ' + data.value);
   	// 	}
   	// });
-
-    // socket.on('keyPress',function(data){
-    //     if(data.inputId === 'left')
-    //         player.pressingLeft = data.state;
-    //     else if(data.inputId === 'right')
-    //         player.pressingRight = data.state;
-    //     else if(data.inputId === 'jump')
-    //         player.jump = data.state;
-    //     else if(data.inputId === 'up')
-    //         player.pressingUp = data.state;
-    //     else if(data.inputId === 'down')
-    //         player.pressingDown = data.state;
-    // });
-
 });
 
 var initPack = {player:[],};
