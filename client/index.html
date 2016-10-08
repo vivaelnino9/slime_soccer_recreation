@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <title>Slime Soccer</title>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-  <script>
+  <!-- <script>
     $(document).ready(function(){
         $("p").fadeOut(6000);
     });
-  </script>
+  </script> -->
 </head>
 <body>
   <section>
@@ -54,7 +54,8 @@
   	var username = null;
 
   	signDivSignIn.onclick = function(){
-  		socket.emit('signIn',{username:signDivUsername.value,password:signDivPassword.value});
+  		// socket.emit('signIn',{username:signDivUsername.value,password:signDivPassword.value});
+      socket.emit('signIn',{username:'lucas',password:'rooney10'});
   	}
   	signDivSignUp.onclick = function(){
   		socket.emit('signUp',{username:signDivUsername.value,password:signDivPassword.value});
@@ -64,6 +65,7 @@
   			signDiv.style.display = 'none';
   			gameDiv.style.display = 'inline-block';
   			username = data.username;
+        $("p").fadeOut(6000);
   		} else
   			alert("Sign in unsuccessul.");
   	});
@@ -110,7 +112,6 @@
     var rho = 1.22; // kg / m^3
     var A = Math.PI * ball.radius * ball.radius / (10000); // m^2
     var ag = 9.81;  // m / s^2
-    var mouse = {x: 0, y: 0, isDown: false};
 
     ctx = document.getElementById("ctx").getContext("2d");
     ctxUi = document.getElementById("ctx-ui").getContext("2d");
