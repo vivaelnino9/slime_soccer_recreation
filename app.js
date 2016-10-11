@@ -167,18 +167,27 @@ var Ball = function(param){
   self.radius = 15; //15
   self.restitution = -.9; //-1
   self.A = Math.PI * self.radius * self.radius / (10000);
+  self.spdX = 20;
 
   var super_update = self.update;
 	self.update = function(){
 		super_update();
-  }
-
-		for(var i in Player.list){
+    for(var i in Player.list){
 			var p = Player.list[i];
-			// if(self.getDistance(p) < 32){
-			// 	// player collisions
-			// }
+			if( (self.getDistance(p) < (p.radius + self.radius)) && (p.y > (self.y - self.radius)) ){
+        // if the ball hits the player
+        if((self.x + self.radius) < p.x){
+          // if the ball hits the left side of the player
+          self.spdX = -(Math.abs(self.spdX) + 2);
+        }
+        else if((self.x + self.radius) > p.x){
+          // if the ball hits the right side of the player
+          self.spdX = (Math.abs(self.spdX) + 2);
+        }
+        self.spdY = -(Math.abs(self.spdY) + 1);
+			}
 		}
+  }
 
 	self.getInitPack = function(){
 		return {
@@ -242,9 +251,6 @@ Ball.update = function(){
 		ball.update();
 		pack.push(ball.getUpdatePack());
 	}
-  for(var i in Player.list){
-		var p = Player.list[i];
-  }
 	return pack;
 }
 
