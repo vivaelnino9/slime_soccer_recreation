@@ -18,17 +18,24 @@ var SOCKET_LIST = {};
 var WIDTH = 1400;
 var HEIGHT = 600;
 
+var frameRate = 1/50; // Seconds
+var frameDelay = frameRate * 1000; // ms
+
+var Cd = 0.47;  // Dimensionless
+var rho = 1.22; // kg / m^3
+var ag = 9.81;  // m / s^2
+
 var Entity = function(param){
-	var self = {
-		x:140,
-		y:HEIGHT,
-		spdX:0,
-		spdY:0,
-		id:"",
-	}
-	if(param){
+  var self = {
+  		x:0,
+  		y:0,
+  		spdX:0,
+  		spdY:0,
+  		id:"",
+  	}
+  if(param){
 		if(param.x)
-			self.x = param.x;
+      self.x = param.x;
 		if(param.y)
 			self.y = param.y;
 		if(param.id)
@@ -47,10 +54,10 @@ var Entity = function(param){
 	}
 	return self;
 }
-
+//player
 var Player = function(param){
 	var self = Entity(param);
-	self.number = "" + Math.floor(10 * Math.random());
+	// self.isPlayer = true;
   self.radius = 55;
 	self.pressingRight = false;
 	self.pressingLeft = false;
@@ -108,7 +115,13 @@ Player.list = {};
 Player.onConnect = function(socket){
 	var player = Player({
 		id:socket.id,
+    x:140,
+    y:HEIGHT,
 	});
+  var ball = Ball({
+    x:WIDTH/2,
+    y: 15,
+  })
   socket.on('keyPress',function(data){
 		if(data.inputId === 'left')
 			player.pressingLeft = data.state;
@@ -123,6 +136,7 @@ Player.onConnect = function(socket){
   socket.emit('init',{
 		selfId:socket.id,
 		player:Player.getAllInitPack(),
+    ball:Ball.getAllInitPack(),
 	})
 }
 Player.getAllInitPack = function(){
@@ -145,8 +159,103 @@ Player.update = function(){
 	}
 	return pack;
 }
+// ball
+var Ball = function(param){
+  var self = Entity(param);
+	self.id = Math.random();
+  self.mass = 0.1; //.1
+  self.radius = 15; //15
+  self.restitution = -.9; //-1
+  self.A = Math.PI * self.radius * self.radius / (10000);
 
-// var DEBUG = true;
+  var super_update = self.update;
+	self.update = function(){
+		super_update();
+  }
+
+		for(var i in Player.list){
+			var p = Player.list[i];
+			// if(self.getDistance(p) < 32){
+			// 	// player collisions
+			// }
+		}
+
+	self.getInitPack = function(){
+		return {
+			id:self.id,
+			x:self.x,
+			y:self.y,
+		};
+	}
+	self.getUpdatePack = function(){
+		return {
+			id:self.id,
+			x:self.x,
+			y:self.y,
+		};
+	}
+  self.physics = function(){
+    var Fx = -0.5 * Cd * self.A * rho * self.spdX * self.spdX * self.spdX / Math.abs(self.spdX);
+    var Fy = -0.5 * Cd * self.A * rho * self.spdY * self.spdY * self.spdY / Math.abs(self.spdY);
+
+    Fx = (isNaN(Fx) ? 0 : Fx);
+    Fy = (isNaN(Fy) ? 0 : Fy);
+
+    var ax = Fx / self.mass;
+    var ay = ag + (Fy / self.mass);
+
+    self.spdX += ax*frameRate;
+    self.spdY += ay*frameRate;
+
+    self.x += self.spdX*frameRate*100;
+    self.y += self.spdY*frameRate*100;
+
+    if (self.y < self.radius){
+        self.spdY *= self.restitution;
+        self.y = self.radius;
+    }
+    if (self.y > HEIGHT - self.radius) {
+        self.spdY *= self.restitution;
+        self.y = HEIGHT - self.radius;
+    }
+    if (self.x > WIDTH - self.radius) {
+        self.spdX *= self.restitution;
+        self.x = WIDTH - self.radius;
+    }
+    if (self.x < self.radius) {
+        self.spdX *= self.restitution;
+        self.x = self.radius;
+    }
+  }
+
+  Ball.list[self.id] = self;
+  initPack.ball.push(self.getInitPack());
+	return self;
+}
+Ball.list = {};
+
+Ball.update = function(){
+	var pack = [];
+	for(var i in Ball.list){
+		var ball = Ball.list[i];
+    ball.physics();
+		ball.update();
+		pack.push(ball.getUpdatePack());
+	}
+  for(var i in Player.list){
+		var p = Player.list[i];
+  }
+	return pack;
+}
+
+Ball.getAllInitPack = function(){
+	var ball = [];
+	for(var i in Ball.list)
+		ball.push(Ball.list[i].getInitPack());
+	return ball;
+}
+
+var DEBUG = true;
 
 var isValidPassword = function(data,cb){
 	// return cb(true);
@@ -211,14 +320,15 @@ io.sockets.on('connection', function(socket){
   	// });
 });
 
-var initPack = {player:[],};
+var initPack = {player:[],ball:[],};
 var removePack = {player:[],};
 
 setInterval(function(){
   var pack = {
     player:Player.update(),
+    ball:Ball.update(),
   }
-
+  // console.log(initPack);
   for(var i in SOCKET_LIST){
 		var socket = SOCKET_LIST[i];
 		socket.emit('init',initPack);
@@ -228,5 +338,6 @@ setInterval(function(){
 
   initPack.player = [];
 	removePack.player = [];
+  initPack.ball = [];
 
 },1000/25);

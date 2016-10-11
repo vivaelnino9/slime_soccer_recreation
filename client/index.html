@@ -100,19 +100,6 @@
   	// }
 
     //game
-    var ball = {
-      position: {x: WIDTH/2, y: 15},
-      velocity: {x: 20, y: 0},
-      mass: 0.1, //kg
-      radius: 15, // 1px = 1cm
-      restitution: -1,
-      };
-
-    var Cd = 0.47;  // Dimensionless
-    var rho = 1.22; // kg / m^3
-    var A = Math.PI * ball.radius * ball.radius / (10000); // m^2
-    var ag = 9.81;  // m / s^2
-
     ctx = document.getElementById("ctx").getContext("2d");
     ctxUi = document.getElementById("ctx-ui").getContext("2d");
 
@@ -135,14 +122,35 @@
     }
     Player.list = {};
 
+    var Ball = function(initPack){
+      var self = {};
+      self.id = initPack.id;
+      self.x = initPack.x;
+      self.y = initPack.y;
+      self.radius = 15;
+
+      self.draw = function(){
+        ctx.clearRect(0,0,WIDTH,HEIGHT);
+  		  drawBall(self.x,self.y,self.radius);
+		}
+
+      Ball.list[self.id] = self;
+      return self;
+    }
+    Ball.list = {};
+
     var selfId = null;
 
     socket.on('init',function(data){
-		if(data.selfId)
-			selfId = data.selfId;
-		  for(var i = 0 ; i < data.player.length; i++){
-			  new Player(data.player[i]);
-		  }
+  		if(data.selfId)
+  			selfId = data.selfId;
+  		  for(var i = 0 ; i < data.player.length; i++){
+  			  new Player(data.player[i]);
+  		  }
+        for(var i = 0 ; i < data.ball.length; i++){
+          // console.log();
+    			new Ball(data.ball[i]);
+    		}
 	  });
     socket.on('update',function(data){
   		for(var i = 0 ; i < data.player.length; i++){
@@ -157,6 +165,16 @@
   					p.score = pack.score;
   			}
   		}
+      for(var i = 0 ; i < data.ball.length; i++){
+  			var pack = data.ball[i];
+  			var b = Ball.list[data.ball[i].id];
+  			if(b){
+  				if(pack.x !== undefined)
+  					b.x = pack.x;
+  				if(pack.y !== undefined)
+  					b.y = pack.y;
+  			}
+		}
     });
 
     socket.on('remove',function(data){
@@ -168,55 +186,20 @@
     setInterval(function(){
   		if(!selfId)
         return;
-      ballPhysics();
-  		drawBall();
   		for(var i in Player.list)
   			Player.list[i].draw();
-  	},40);
+      for(var i in Ball.list)
+			   Ball.list[i].draw();
+    	},30);
 
     var frameRate = 1/40; // Seconds
     var frameDelay = frameRate * 1000; // ms
 
-    var ballPhysics = function(){
-      var Fx = -0.5 * Cd * A * rho * ball.velocity.x * ball.velocity.x * ball.velocity.x / Math.abs(ball.velocity.x);
-      var Fy = -0.5 * Cd * A * rho * ball.velocity.y * ball.velocity.y * ball.velocity.y / Math.abs(ball.velocity.y);
-
-      Fx = (isNaN(Fx) ? 0 : Fx);
-      Fy = (isNaN(Fy) ? 0 : Fy);
-
-      var ax = Fx / ball.mass;
-      var ay = ag + (Fy / ball.mass);
-
-      ball.velocity.x += ax*frameRate;
-      ball.velocity.y += ay*frameRate;
-
-
-      ball.position.x += ball.velocity.x*frameRate*100;
-      ball.position.y += ball.velocity.y*frameRate*100;
-
-      if (ball.position.y < ball.radius){
-          ball.velocity.y *= ball.restitution;
-          ball.position.y = ball.radius;
-      }
-      if (ball.position.y > HEIGHT - ball.radius) {
-          ball.velocity.y *= ball.restitution;
-          ball.position.y = HEIGHT - ball.radius;
-      }
-      if (ball.position.x > WIDTH - ball.radius) {
-          ball.velocity.x *= ball.restitution;
-          ball.position.x = WIDTH - ball.radius;
-      }
-      if (ball.position.x < ball.radius) {
-          ball.velocity.x *= ball.restitution;
-          ball.position.x = ball.radius;
-      }
-    }
-    var drawBall = function(){
-      ctx.clearRect(0,0,WIDTH,HEIGHT);
+    var drawBall = function(x,y,radius){
       ctx.save();
-      ctx.translate(ball.position.x, ball.position.y);
+      ctx.translate(x,y);
       ctx.beginPath();
-      ctx.arc(0, 0, ball.radius, 0, Math.PI*2, true);
+      ctx.arc(0, 0, radius, 0, Math.PI*2, true);
       ctx.fillStyle = 'red';
       ctx.fill();
       ctx.closePath();
