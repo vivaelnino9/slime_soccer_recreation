@@ -4,11 +4,6 @@
   <meta charset="UTF-8" />
   <title>Slime Soccer</title>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
-  <!-- <script>
-    $(document).ready(function(){
-        $("p").fadeOut(6000);
-    });
-  </script> -->
 </head>
 <body>
   <section>
@@ -21,7 +16,7 @@
 
     <div id="gameDiv" style="display:none;">
     	<div id="game">
-        <canvas id="ctx" width="1400" height="600" style="position: absolute;display:block; auto;border:1px solid #666;">
+        <canvas id="ctx" width="1400" height="600" style="position: absolute;display:block; auto;border:1px solid #666;background-color:#318CC5;">
           Get a better browser!</canvas>
         <canvas id="ctx-ui" width="1400" height="600" style="position: absolute;display:block; auto;border:1px solid #666;"></canvas>
         <!-- <p style="font-size: 50px;margin: 300px 700px 300px 650px; position: absolute;">PLAY!</p> -->
@@ -200,7 +195,7 @@
       ctx.translate(x,y);
       ctx.beginPath();
       ctx.arc(0, 0, radius, 0, Math.PI*2, true);
-      ctx.fillStyle = 'red';
+      ctx.fillStyle = 'yellow';
       ctx.fill();
       ctx.closePath();
       ctx.restore();
