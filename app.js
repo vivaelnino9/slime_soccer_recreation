@@ -57,7 +57,6 @@ var Entity = function(param){
 //player
 var Player = function(param){
 	var self = Entity(param);
-	// self.isPlayer = true;
   self.radius = 55;
 	self.pressingRight = false;
 	self.pressingLeft = false;
@@ -113,6 +112,7 @@ var Player = function(param){
 }
 Player.list = {};
 Player.onConnect = function(socket){
+  // When player connects, create player and ball
 	var player = Player({
 		id:socket.id,
     x:140,
@@ -184,7 +184,7 @@ var Ball = function(param){
           // if the ball hits the right side of the player
           self.spdX = (Math.abs(self.spdX) + 2);
         }
-        self.spdY = -(Math.abs(self.spdY) + 1);
+        self.spdY = -(Math.abs(self.spdY) + .6);
 			}
 		}
   }
@@ -204,34 +204,44 @@ var Ball = function(param){
 		};
 	}
   self.physics = function(){
+    // Apply ball physics
+    // Drag force: Fd = -1/2 * Cd * A * rho * v * v
     var Fx = -0.5 * Cd * self.A * rho * self.spdX * self.spdX * self.spdX / Math.abs(self.spdX);
     var Fy = -0.5 * Cd * self.A * rho * self.spdY * self.spdY * self.spdY / Math.abs(self.spdY);
 
     Fx = (isNaN(Fx) ? 0 : Fx);
     Fy = (isNaN(Fy) ? 0 : Fy);
 
+    // Calculate acceleration ( F = ma )
     var ax = Fx / self.mass;
     var ay = ag + (Fy / self.mass);
 
+    // Integrate to get velocity
     self.spdX += ax*frameRate;
     self.spdY += ay*frameRate;
 
+    // Integrate to get position
     self.x += self.spdX*frameRate*100;
     self.y += self.spdY*frameRate*100;
 
+    // Handle collisions
     if (self.y < self.radius){
+        // Ball hitting the ceiling
         self.spdY *= self.restitution;
         self.y = self.radius;
     }
     if (self.y > HEIGHT - self.radius) {
+        // Ball hitting the floor
         self.spdY *= self.restitution;
         self.y = HEIGHT - self.radius;
     }
     if (self.x > WIDTH - self.radius) {
+        // Ball hitting the right wall
         self.spdX *= self.restitution;
         self.x = WIDTH - self.radius;
     }
     if (self.x < self.radius) {
+        // Ball hitting the left wall
         self.spdX *= self.restitution;
         self.x = self.radius;
     }
@@ -264,7 +274,7 @@ Ball.getAllInitPack = function(){
 var DEBUG = true;
 
 var isValidPassword = function(data,cb){
-	// return cb(true);
+	// Check database for username and password
 	db.account.find({username:data.username,password:data.password},function(err,res){
 		if(res.length > 0)
 			cb(true);
@@ -273,8 +283,7 @@ var isValidPassword = function(data,cb){
 	});
 }
 var isUsernameTaken = function(data,cb){
-	// return cb(false);
-
+	// Check database to see is username already exists
 	db.account.find({username:data.username},function(err,res){
 		if(res.length > 0 || data.username === "" )
 			cb(true);
@@ -283,7 +292,7 @@ var isUsernameTaken = function(data,cb){
 	});
 }
 var addUser = function(data,cb){
-	// return cb();
+	// Add username and password to database
 	db.account.insert({username:data.username,password:data.password},function(err){
 		cb();
 	});
@@ -291,14 +300,18 @@ var addUser = function(data,cb){
 
 var io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
+    // When server is started, create a socket id number
     socket.id = Math.random();
     SOCKET_LIST[socket.id] = socket;
     socket.on('signIn',function(data){
+    // When player tries to sign in, check username and password
   		isValidPassword(data,function(res){
   			if(res){
+          // If successul signin, connect the player and give it socket id
   				Player.onConnect(socket);
   				socket.emit('signInResponse',{success:true,username:data.username,});
   			} else {
+          // If unsuccessul, tell player signin was unsuccessul
   				socket.emit('signInResponse',{success:false});
   			}
   		});
