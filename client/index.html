@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <title>Slime Soccer</title>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <link rel="stylesheet" href="client/css/style.css">
 </head>
 <body>
   <section>
@@ -16,20 +17,14 @@
 
     <div id="gameDiv" style="display:none;">
     	<div id="game">
-        <canvas id="ctx" width="1400" height="600" style="position: absolute;display:block; auto;border:1px solid #666;background-color:#318CC5;">
+        <canvas id="ctx" width="1400" height="600" style="background-color: blue;">
           Get a better browser!</canvas>
-        <canvas id="ctx-ui" width="1400" height="600" style="position: absolute;display:block; auto;border:1px solid #666;"></canvas>
-        <!-- <p style="font-size: 50px;margin: 300px 700px 300px 650px; position: absolute;">PLAY!</p> -->
+        <canvas id="ctx-ui" width="1400" height="600"></canvas>
+        <p id=play>PLAY!</p>
       </div>
-      <!-- <div id="belowGame">
+      <div id="belowGame">
 		    <div id="chat-text">
-			    <div>Hello! This game is more fun with friends!</div>
-		    </div>
-
-		    <form id="chat-form">
-			    <input id="chat-input" type="text" placeholder="Type here to chat!"></input>
-		    </form>
-	    </div> -->
+	    </div>
     </div>
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~-->
     <script src="/client/socket.js"></script>
@@ -205,9 +200,9 @@
       ctxUi.arc(x, y, 55, 0, Math.PI, true);
       ctxUi.closePath();
       ctxUi.lineWidth = 5;
-      ctxUi.fillStyle = 'blue';
+      ctxUi.fillStyle = '#01ffff';
       ctxUi.fill();
-      ctxUi.strokeStyle = 'blue';
+      ctxUi.strokeStyle = '#01ffff';
       ctxUi.stroke();
     }
 
