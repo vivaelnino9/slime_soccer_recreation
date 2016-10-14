@@ -20,6 +20,7 @@
         <canvas id="ctx" width="1400" height="600" style="background-color: blue;">
           Get a better browser!</canvas>
         <canvas id="ctx-ui" width="1400" height="600"></canvas>
+        <canvas id="ctx-goal" width="1400" height="600" style="position: absolute;"></canvas>
         <p id=play>PLAY!</p>
       </div>
       <div id="belowGame">
@@ -92,6 +93,7 @@
     //game
     ctx = document.getElementById("ctx").getContext("2d");
     ctxUi = document.getElementById("ctx-ui").getContext("2d");
+    ctxG = document.getElementById("ctx-goal").getContext("2d");
 
     var Player = function(initPack){
   		var self = {};
@@ -205,6 +207,48 @@
       ctxUi.strokeStyle = '#01ffff';
       ctxUi.stroke();
     }
+    var drawGoal = function(side){
+      //first draw post
+      if(side=="left"){
+        console.log("poo");
+        ctxG.rect(55,HEIGHT - 110,5,110);
+        ctxG.fillStyle = 'white';
+      }
+      if(side=="right"){
+        console.log("poop");
+        ctxG.rect(WIDTH-60,HEIGHT - 110,5,110);
+        ctxG.fillStyle = 'white';
+      }
+      ctxG.fill();
+      ctxG.stroke();
+      ctxG.strokeStyle="#fff";
+      for(var i = 45.5;i > 0;i -= 10){
+        //vertical net lines
+        if(side=="left"){
+          ctxG.moveTo(i,HEIGHT-110);
+          ctxG.lineTo(i,HEIGHT);
+        }
+        else{
+          ctxG.moveTo(WIDTH-i,HEIGHT-110);
+          ctxG.lineTo(WIDTH-i,HEIGHT);
+        }
+      }
+      for(var j=110;j>0;j-=10){
+        //horizontal net lines
+        if(side=="left"){
+          ctxG.moveTo(0,HEIGHT - j);
+          ctxG.lineTo(60,HEIGHT - j);
+        }
+        else{
+          ctxG.moveTo(WIDTH,HEIGHT - j);
+          ctxG.lineTo(WIDTH-60,HEIGHT - j);
+        }
+      }
+      ctxG.stroke();
+      return;
+    }
+    drawGoal("left");
+    drawGoal("right");
 
     document.onkeydown = function(event){
         if(event.keyCode === 68)    //d
