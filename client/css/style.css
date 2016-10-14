@@ -36,7 +36,6 @@ canvas#ctx, canvas#ctx-ui {
     position: absolute;
     display: block;
     auto;
-    border: 1px solid #666;
 }
 p#play {
     font-size: 50px;
