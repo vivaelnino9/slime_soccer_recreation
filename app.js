@@ -119,8 +119,8 @@ Player.onConnect = function(socket){
     y:HEIGHT,
 	});
   var ball = Ball({
-    x:WIDTH/2,
-    y: 15,
+    x:(WIDTH/2),
+    y:15,
   })
   socket.on('keyPress',function(data){
 		if(data.inputId === 'left')
@@ -167,7 +167,10 @@ var Ball = function(param){
   self.radius = 15; //15
   self.restitution = -.9; //-1
   self.A = Math.PI * self.radius * self.radius / (10000);
-  self.spdX = 20;
+  // self.spdX = -20;
+  self.above = false;
+  self.L_goal = false;
+  self.R_goal = false;
 
   var super_update = self.update;
 	self.update = function(){
@@ -225,26 +228,98 @@ var Ball = function(param){
     self.y += self.spdY*frameRate*100;
 
     // Handle collisions
+    var left_goal ={
+      x:55,
+      y:(HEIGHT-110),
+      goal:false,
+    }
+    var right_goal ={
+      x:(WIDTH-55),
+      y:left_goal.y,
+      goal:false,
+    }
+
+    if(self.L_goal){
+    //Ball in left goal
+      if((self.x + self.radius) > left_goal.x)
+        self.spdX = -(Math.abs(self.spdX));
+      if((self.y - self.radius) < left_goal.y)
+        self.spdY = Math.abs(self.spdY);
+    }
+    if(self.R_goal){
+    //Ball in right goal
+      if((self.x - self.radius) < right_goal.x)
+        self.spdX = Math.abs(self.spdX);
+      if((self.y - self.radius) < right_goal.y)
+        self.spdY = Math.abs(self.spdY);
+    }
     if (self.y < self.radius){
-        // Ball hitting the ceiling
-        self.spdY *= self.restitution;
-        self.y = self.radius;
+    // Ball hitting the ceiling
+      self.spdY *= self.restitution;
+      self.y = self.radius;
     }
     if (self.y > HEIGHT - self.radius) {
-        // Ball hitting the floor
-        self.spdY *= self.restitution;
-        self.y = HEIGHT - self.radius;
+    // Ball hitting the floor
+      self.spdY *= self.restitution;
+      self.y = HEIGHT - self.radius;
     }
     if (self.x > WIDTH - self.radius) {
-        // Ball hitting the right wall
-        self.spdX *= self.restitution;
-        self.x = WIDTH - self.radius;
+    // Ball hitting the right wall
+      self.spdX *= self.restitution;
+      self.x = WIDTH - self.radius;
     }
     if (self.x < self.radius) {
-        // Ball hitting the left wall
-        self.spdX *= self.restitution;
-        self.x = self.radius;
+    // Ball hitting the left wall
+      self.spdX *= self.restitution;
+      self.x = self.radius;
     }
+    if(self.getDistance(left_goal)<15){
+      // Ball hitting left crossbar
+      self.spdX=Math.abs(self.spdX);
+    }
+    if(self.getDistance(right_goal)<15){
+      // Ball hitting right crossbar
+      self.spdX=-(Math.abs(self.spdX));
+    }
+    if (self.x < left_goal.x || self.x > right_goal.x){
+    // Ball left of left_goal OR right of right_goal
+      if((self.y + self.radius) < left_goal.y){
+      // Ball above either goal
+        if(!self.above){
+          self.above=true;
+        }
+      }
+      if((self.y + self.radius) > left_goal.y){
+        if(!self.above){
+          // Ball in either goal
+          ag=0; //zero gravity
+          self.goal=true;
+          if(self.x < left_goal.x)
+          // Ball in left goal
+            self.L_goal=true;
+          else
+          // Ball in right goal
+            self.R_goal=true;
+          for(var i in SOCKET_LIST){
+          // Emit goal message to both players
+        		var socket = SOCKET_LIST[i];
+            socket.emit('Goal');
+          }
+        }
+        else{
+          // Ball hitting top of goal
+          self.spdY *= self.restitution;
+          self.y = left_goal.y - self.radius;
+        }
+      }
+    }
+    if((self.x+self.radius)>left_goal.x && (self.x+self.radius) < right_goal.x){
+      // Ball not above either goal
+      self.above=false;
+    }
+
+
+
   }
 
   Ball.list[self.id] = self;

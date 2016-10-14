@@ -22,6 +22,7 @@
         <canvas id="ctx-ui" width="1400" height="600"></canvas>
         <canvas id="ctx-goal" width="1400" height="600" style="position: absolute;"></canvas>
         <p id=play>PLAY!</p>
+        <p id=goal style="display:none;">GOAL!</p>
       </div>
       <div id="belowGame">
 		    <div id="chat-text">
@@ -56,7 +57,7 @@
   			signDiv.style.display = 'none';
   			gameDiv.style.display = 'inline-block';
   			username = data.username;
-        $("p").fadeOut(6000);
+        $("#play").fadeOut(6000);
   		} else
   			alert("Sign in unsuccessul.");
   	});
@@ -140,7 +141,6 @@
   			  new Player(data.player[i]);
   		  }
         for(var i = 0 ; i < data.ball.length; i++){
-          // console.log();
     			new Ball(data.ball[i]);
     		}
 	  });
@@ -174,6 +174,10 @@
   			delete Player.list[data.player[i]];
   		}
   	});
+
+    socket.on('Goal',function(){
+      $("#goal").fadeIn(3000);
+    });
 
     setInterval(function(){
   		if(!selfId)
@@ -210,12 +214,10 @@
     var drawGoal = function(side){
       //first draw post
       if(side=="left"){
-        console.log("poo");
         ctxG.rect(55,HEIGHT - 110,5,110);
         ctxG.fillStyle = 'white';
       }
       if(side=="right"){
-        console.log("poop");
         ctxG.rect(WIDTH-60,HEIGHT - 110,5,110);
         ctxG.fillStyle = 'white';
       }
