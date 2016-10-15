@@ -445,4 +445,4 @@ setInterval(function(){
 	removePack.player = [];
   initPack.ball = [];
 
-},1000/25);
+},35);
