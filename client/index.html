@@ -21,6 +21,8 @@
           Get a better browser!</canvas>
         <canvas id="ctx-ui" width="1400" height="600"></canvas>
         <canvas id="ctx-goal" width="1400" height="600" style="position: absolute;"></canvas>
+        <canvas id="ctx-eye" width="1400" height="600" style="position: absolute;"></canvas>
+        <canvas id="ctx-eyeball" width="1400" height="600" style="position: absolute;"></canvas>
         <p id=play>PLAY!</p>
         <p id=goal style="display:none;">GOAL!</p>
       </div>
@@ -95,7 +97,8 @@
     ctx = document.getElementById("ctx").getContext("2d");
     ctxUi = document.getElementById("ctx-ui").getContext("2d");
     ctxG = document.getElementById("ctx-goal").getContext("2d");
-
+    ctxE = document.getElementById("ctx-eye").getContext("2d");
+    ctxEB = document.getElementById("ctx-eyeball").getContext("2d");
     var Player = function(initPack){
   		var self = {};
   		self.id = initPack.id;
@@ -108,6 +111,8 @@
         var x = self.x
         var y = self.y
   		  drawPlayer(x,y);
+        ctxE.clearRect(0,0,WIDTH,HEIGHT);
+        drawEye(x,y);
 		}
     Player.list[self.id] = self;
 
@@ -210,6 +215,24 @@
       ctxUi.fill();
       ctxUi.strokeStyle = '#01ffff';
       ctxUi.stroke();
+    }
+    var drawEye = function(x,y){
+      ctxE.beginPath();
+      ctxE.arc((x+32), (y-32), 12, 0, 2 * Math.PI);
+      ctxE.fillStyle = 'white';
+      ctxE.fill();
+      ctxE.strokeStyle = 'white';
+      ctxE.stroke();
+      ctxEB.clearRect(0,0,WIDTH,HEIGHT);
+      drawEyeBall((x+40),(y-32));
+    }
+    var drawEyeBall = function(x,y){
+      ctxEB.beginPath();
+      ctxEB.arc(x, y, 4, 0, 2 * Math.PI);
+      ctxEB.fillStyle = 'black';
+      ctxEB.fill();
+      ctxEB.strokeStyle = 'black';
+      ctxEB.stroke();
     }
     var drawGoal = function(side){
       //first draw post
