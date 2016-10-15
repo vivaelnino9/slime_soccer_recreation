@@ -179,15 +179,26 @@ var Ball = function(param){
 			var p = Player.list[i];
 			if( (self.getDistance(p) < (p.radius + self.radius)) && (p.y > (self.y - self.radius)) ){
         // if the ball hits the player
-        if((self.x + self.radius) < p.x){
-          // if the ball hits the left side of the player
+        if(self.x < (p.x - 15)){
+        // if the ball hits the left side of the player
           self.spdX = -(Math.abs(self.spdX) + 2);
+          if(self.x > (p.x - 35))
+            self.spdY = -(Math.abs(self.spdY) + .6);
+          else if(self.x < (p.x - 35))
+            self.spdY = -(Math.abs(self.spdY) + .1);
         }
-        else if((self.x + self.radius) > p.x){
-          // if the ball hits the right side of the player
+        else if(self.x > (p.x + 15)){
+        // if the ball hits the right side of the player
           self.spdX = (Math.abs(self.spdX) + 2);
+          if(self.x < (p.x + 35))
+            self.spdY = -(Math.abs(self.spdY) + .6);
+          else if(self.x > (p.x + 35))
+            self.spdY = -(Math.abs(self.spdY) + .1);
         }
-        self.spdY = -(Math.abs(self.spdY) + .6);
+        else
+          self.spdY = -(Math.abs(self.spdY) + .4);
+
+        self.spdY = -(Math.abs(self.spdY) + .4);
 			}
 		}
   }
