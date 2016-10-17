@@ -111,17 +111,18 @@ var Player = function(param){
   return self;
 }
 Player.list = {};
-Player.onConnect = function(socket){
+// Player.onConnect = function(socket){//
+Player.onConnect = function(socket,ball){
   // When player connects, create player and ball
 	var player = Player({
 		id:socket.id,
     x:140,
     y:HEIGHT,
 	});
-  var ball = Ball({
-    x:(WIDTH/2),
-    y:15,
-  })
+  // var ball = Ball({//
+  //   x:(WIDTH/2),
+  //   y:(15),
+  // })
   socket.on('keyPress',function(data){
 		if(data.inputId === 'left')
 			player.pressingLeft = data.state;
@@ -132,11 +133,11 @@ Player.onConnect = function(socket){
 		else if(data.inputId === 'down')
 			player.pressingDown = data.state;
 	});
-
   socket.emit('init',{
 		selfId:socket.id,
 		player:Player.getAllInitPack(),
-    ball:Ball.getAllInitPack(),
+    // ball:Ball.getAllInitPack(),//
+    ball:startBall(ball),
 	})
 }
 Player.getAllInitPack = function(){
@@ -333,22 +334,38 @@ var Ball = function(param){
 
   }
 
-  Ball.list[self.id] = self;
-  initPack.ball.push(self.getInitPack());
+  // Ball.list[self.id] = self;//
+  // initPack.ball.push(self.getInitPack());//
 	return self;
 }
-Ball.list = {};
-
-Ball.update = function(){
+// Ball.list = {};//
+var ball = Ball({
+  x:(WIDTH/2),
+  y:15,
+})
+startBall = function(ball){
 	var pack = [];
-	for(var i in Ball.list){
-		var ball = Ball.list[i];
-    ball.physics();
-		ball.update();
-		pack.push(ball.getUpdatePack());
-	}
+	pack.push(ball.getInitPack());
 	return pack;
 }
+updateBall = function(){
+  var pack = [];
+  ball.physics();
+	ball.update();
+	pack.push(ball.getUpdatePack());
+	return pack;
+}
+
+// Ball.update = function(){//
+// 	var pack = [];
+// 	for(var i in Ball.list){
+// 		var ball = Ball.list[i];
+//     ball.physics();
+// 		ball.update();
+// 		pack.push(ball.getUpdatePack());
+// 	}
+// 	return pack;
+// }
 
 Ball.getAllInitPack = function(){
 	var ball = [];
@@ -394,7 +411,8 @@ io.sockets.on('connection', function(socket){
   		isValidPassword(data,function(res){
   			if(res){
           // If successul signin, connect the player and give it socket id
-  				Player.onConnect(socket);
+  				// Player.onConnect(socket);
+          Player.onConnect(socket,ball);
   				socket.emit('signInResponse',{success:true,username:data.username,});
   			} else {
           // If unsuccessul, tell player signin was unsuccessul
@@ -428,12 +446,13 @@ io.sockets.on('connection', function(socket){
 var initPack = {player:[],ball:[],};
 var removePack = {player:[],};
 
+initPack.ball.push(ball.getInitPack());
 setInterval(function(){
   var pack = {
     player:Player.update(),
-    ball:Ball.update(),
+    // ball:Ball.update(),//
+    ball:updateBall(),
   }
-  // console.log(initPack);
   for(var i in SOCKET_LIST){
 		var socket = SOCKET_LIST[i];
 		socket.emit('init',initPack);
