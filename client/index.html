@@ -171,7 +171,7 @@
   				if(pack.y !== undefined)
   					b.y = pack.y;
   			}
-		}
+		  }
     });
 
     socket.on('remove',function(data){
@@ -217,18 +217,35 @@
       ctxUi.stroke();
     }
     var drawEye = function(x,y){
+      var Ex = (x+32);
+      var Ey = (y-32);
       ctxE.beginPath();
-      ctxE.arc((x+32), (y-32), 12, 0, 2 * Math.PI);
+      ctxE.arc(Ex, Ey, 12, 0, 2 * Math.PI);
       ctxE.fillStyle = 'white';
       ctxE.fill();
       ctxE.strokeStyle = 'white';
       ctxE.stroke();
       ctxEB.clearRect(0,0,WIDTH,HEIGHT);
-      drawEyeBall((x+40),(y-32));
+      drawEyeBall(Ex,Ey);
     }
     var drawEyeBall = function(x,y){
+      var EBx = x;
+      var EBy = y;
+      var ball = {position:[],};
+      for(var i in Ball.list){
+        ball.position.push(Ball.list[i]);
+      }
+      var angle = null;
+      if(Math.atan2(ball.position[0].y - y, ball.position[0].x - x) * 180 / Math.PI < 0)
+        angle = 360+(Math.atan2(ball.position[0].y - y, ball.position[0].x - x) * 180 / Math.PI);
+      else
+        angle = Math.atan2(ball.position[0].y - y, ball.position[0].x - x) * 180 / Math.PI;
+      var Px = 8 * (Math.cos(angle/180*Math.PI));
+      var Py = 8 * (Math.sin(angle/180*Math.PI));
+      EBx += Px;
+      EBy += Py;
       ctxEB.beginPath();
-      ctxEB.arc(x, y, 4, 0, 2 * Math.PI);
+      ctxEB.arc(EBx, EBy, 4, 0, 2 * Math.PI);
       ctxEB.fillStyle = 'black';
       ctxEB.fill();
       ctxEB.strokeStyle = 'black';
