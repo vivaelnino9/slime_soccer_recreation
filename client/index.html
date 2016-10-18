@@ -23,8 +23,12 @@
         <canvas id="ctx-goal" width="1400" height="600" style="position: absolute;"></canvas>
         <canvas id="ctx-eye" width="1400" height="600" style="position: absolute;"></canvas>
         <canvas id="ctx-eyeball" width="1400" height="600" style="position: absolute;"></canvas>
-        <p id=play>PLAY!</p>
-        <p id=goal style="display:none;">GOAL!</p>
+        <p id=play-sign>PLAY!</p>
+        <button id="P1-ready-button" style="margin: 400px 450px 0px 100px;">Ready?</button>
+        <p id="P1-go-sign" style="margin: 400px 450px 0px 125px;">GO!</p>
+        <button id="P2-ready-button" style="margin: 400px 0px 0px 1200px;">Ready?</button>
+        <p id="P2-go-sign" style="margin: 400px 0px 0px 1225px;">GO!</p>
+        <p id=goal>GOAL!</p>
       </div>
       <div id="belowGame">
 		    <div id="chat-text">
@@ -45,7 +49,16 @@
   	var signDivSignIn = document.getElementById('signDiv-signIn');
   	var signDivSignUp = document.getElementById('signDiv-signUp');
   	var signDivPassword = document.getElementById('signDiv-password');
+
+    var P1readyButton = document.getElementById('P1-ready-button');
+    var P1goSign = document.getElementById('P1-go-sign');
+    var P2readyButton = document.getElementById('P2-ready-button');
+    var P2goSign = document.getElementById('P2-go-sign');
+    var playSign = document.getElementById('play-sign');
+
   	var username = null;
+    var P1ready = false;
+    var P2ready = false;
 
   	signDivSignIn.onclick = function(){
   		// socket.emit('signIn',{username:signDivUsername.value,password:signDivPassword.value});
@@ -59,16 +72,56 @@
   			signDiv.style.display = 'none';
   			gameDiv.style.display = 'inline-block';
   			username = data.username;
-        $("#play").fadeOut(6000);
-  		} else
+        P1readyButton.style.display = 'inline-block';
+        P2readyButton.style.display = 'inline-block';
+        var size = 0, key;
+        for (player in Player.list)
+            size++;
+        if(size < 2)
+          P2readyButton.disabled = true;
+        else
+          P1readyButton.disabled = true;
+  		}
+      else
   			alert("Sign in unsuccessul.");
   	});
   	socket.on('signUpResponse',function(data){
   		if(data.success){
   			alert("Sign up successul.");
-  		} else
+  		}
+      else
   			alert("Sign up unsuccessul.");
   	});
+
+    socket.on('Player1',function(){
+      P1readyButton.style.display = 'none';
+      P1goSign.style.display = 'inline-block';
+      P1ready = true;
+    });
+
+    socket.on('Player2',function(data){
+      P2readyButton.style.display = 'none';
+      P2goSign.style.display = 'inline-block';
+      P2ready = true;
+    });
+
+    P1readyButton.onclick = function(){
+      socket.emit('P1ready');
+  	}
+    P2readyButton.onclick = function(){
+      socket.emit('P2ready');
+  	}
+
+    var timer = setInterval(function(){
+  		if(P1ready && P2ready){
+        socket.emit('startGame');
+        playSign.style.display = 'inline-block';
+        $("#play-sign").fadeOut(3000);
+        $("#P1-go-sign").fadeOut(3000);
+        $("#P2-go-sign").fadeOut(3000);
+        clearInterval(timer);
+      }
+  	},30);
 
     //chat
     // var chatText = document.getElementById('chat-text');
@@ -102,17 +155,23 @@
     var Player = function(initPack){
   		var self = {};
   		self.id = initPack.id;
+      self.number = initPack.number;
   		self.x = initPack.x;
   		self.y = initPack.y;
   		self.score = initPack.score;
 
       self.draw = function(){
         ctxUi.clearRect(0,0,WIDTH,HEIGHT);
-        var x = self.x
-        var y = self.y
-  		  drawPlayer(x,y);
         ctxE.clearRect(0,0,WIDTH,HEIGHT);
-        drawEye(x,y);
+        ctxEB.clearRect(0,0,WIDTH,HEIGHT);
+        var x = y = null;
+        for (var i in Player.list){
+          x = Player.list[i].x;
+          y = Player.list[i].y
+          num = Player.list[i].number;
+          drawPlayer(x,y,num);
+          drawEye(x,y,num);
+        }
 		}
     Player.list[self.id] = self;
 
@@ -142,36 +201,41 @@
     socket.on('init',function(data){
   		if(data.selfId)
   			selfId = data.selfId;
-  		  for(var i = 0 ; i < data.player.length; i++){
-  			  new Player(data.player[i]);
-  		  }
-        for(var i = 0 ; i < data.ball.length; i++){
-    			new Ball(data.ball[i]);
-    		}
+		  for(var i = 0 ; i < data.player.length; i++){
+			  new Player(data.player[i]);
+        // console.log(data.player[i]);
+		  }
+      for(var i = 0 ; i < data.ball.length; i++){
+  			new Ball(data.ball[i]);
+  		}
 	  });
     socket.on('update',function(data){
-  		for(var i = 0 ; i < data.player.length; i++){
-  			var pack = data.player[i];
-  			var p = Player.list[pack.id];
-  			if(p){
-  				if(pack.x !== undefined)
-  					p.x = pack.x;
-  				if(pack.y !== undefined)
-  					p.y = pack.y;
-  				if(pack.score !== undefined)
-  					p.score = pack.score;
-  			}
-  		}
-      for(var i = 0 ; i < data.ball.length; i++){
-  			var pack = data.ball[i];
-  			var b = Ball.list[data.ball[i].id];
-  			if(b){
-  				if(pack.x !== undefined)
-  					b.x = pack.x;
-  				if(pack.y !== undefined)
-  					b.y = pack.y;
-  			}
-		  }
+      if(data != null){
+        for(var i = 0 ; i < data.player.length; i++){
+    			var pack = data.player[i];
+    			var p = Player.list[pack.id];
+    			if(p){
+    				if(pack.x !== undefined)
+    					p.x = pack.x;
+    				if(pack.y !== undefined)
+    					p.y = pack.y;
+    				if(pack.score !== undefined)
+    					p.score = pack.score;
+    			}
+    		}
+      }
+      if(data != null){
+        for(var i = 0 ; i < data.ball.length; i++){
+    			var pack = data.ball[i];
+    			var b = Ball.list[data.ball[i].id];
+    			if(b){
+    				if(pack.x !== undefined)
+    					b.x = pack.x;
+    				if(pack.y !== undefined)
+    					b.y = pack.y;
+    			}
+  		  }
+      }
     });
 
     socket.on('remove',function(data){
@@ -206,26 +270,37 @@
       ctx.closePath();
       ctx.restore();
     }
-    var drawPlayer = function(x,y){
+    var drawPlayer = function(x,y,num){
+      var color = '';
       ctxUi.beginPath();
       ctxUi.arc(x, y, 55, 0, Math.PI, true);
       ctxUi.closePath();
       ctxUi.lineWidth = 5;
-      ctxUi.fillStyle = '#01ffff';
+      if(num<2)
+        color = '#01ffff';
+      else
+        color = '#ff001a';
+      ctxUi.fillStyle = color ;
       ctxUi.fill();
-      ctxUi.strokeStyle = '#01ffff';
+      ctxUi.strokeStyle = color;
       ctxUi.stroke();
     }
-    var drawEye = function(x,y){
-      var Ex = (x+32);
-      var Ey = (y-32);
+    var drawEye = function(x,y,num){
+      var Ex = Ey = null;
+      if(num<2){
+        Ex = (x+32);
+        Ey = (y-32);
+      }
+      else{
+        Ex = (x-32);
+        Ey = (y-32);
+      }
       ctxE.beginPath();
       ctxE.arc(Ex, Ey, 12, 0, 2 * Math.PI);
       ctxE.fillStyle = 'white';
       ctxE.fill();
       ctxE.strokeStyle = 'white';
       ctxE.stroke();
-      ctxEB.clearRect(0,0,WIDTH,HEIGHT);
       drawEyeBall(Ex,Ey);
     }
     var drawEyeBall = function(x,y){

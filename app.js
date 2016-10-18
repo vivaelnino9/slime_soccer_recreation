@@ -32,6 +32,7 @@ var Entity = function(param){
   		spdX:0,
   		spdY:0,
   		id:"",
+      number:null,
   	}
   if(param){
 		if(param.x)
@@ -40,6 +41,8 @@ var Entity = function(param){
 			self.y = param.y;
 		if(param.id)
 			self.id = param.id;
+    if(param.number)
+			self.number = param.number;
 	}
 
   self.update = function(){
@@ -91,6 +94,7 @@ var Player = function(param){
   self.getInitPack = function(){
 		return {
 			id:self.id,
+      number:self.number,
 			x:self.x,
 			y:self.y,
 			score:self.score,
@@ -114,15 +118,38 @@ Player.list = {};
 // Player.onConnect = function(socket){//
 Player.onConnect = function(socket,ball){
   // When player connects, create player and ball
-	var player = Player({
-		id:socket.id,
-    x:140,
-    y:HEIGHT,
-	});
+  var size = 0, key;
+    for (key in Player.list)
+      size++;
+  if(size<1){
+    var player = Player({
+  		id:socket.id,
+      number:1,
+      x:140,
+      y:HEIGHT,
+  	});
+  }
+  else{
+    var player = Player({
+  		id:socket.id,
+      number:2,
+      x:(WIDTH-140),
+      y:HEIGHT,
+  	});
+  }
   // var ball = Ball({//
   //   x:(WIDTH/2),
   //   y:(15),
   // })
+  socket.emit('init',{
+		selfId:socket.id,
+		player:Player.getAllInitPack(),
+    // ball:Ball.getAllInitPack(),//
+    ball:startBall(ball),
+	})
+  Player.control(socket,player);
+}
+Player.control = function(socket,player){
   socket.on('keyPress',function(data){
 		if(data.inputId === 'left')
 			player.pressingLeft = data.state;
@@ -133,12 +160,6 @@ Player.onConnect = function(socket,ball){
 		else if(data.inputId === 'down')
 			player.pressingDown = data.state;
 	});
-  socket.emit('init',{
-		selfId:socket.id,
-		player:Player.getAllInitPack(),
-    // ball:Ball.getAllInitPack(),//
-    ball:startBall(ball),
-	})
 }
 Player.getAllInitPack = function(){
 	var players = [];
@@ -304,19 +325,20 @@ var Ball = function(param){
       if((self.y + self.radius) > left_goal.y){
         if(!self.above){
           // Ball in either goal
-          ag=0; //zero gravity
-          self.goal=true;
-          if(self.x < left_goal.x)
-          // Ball in left goal
-            self.L_goal=true;
-          else
-          // Ball in right goal
-            self.R_goal=true;
-          for(var i in SOCKET_LIST){
-          // Emit goal message to both players
-        		var socket = SOCKET_LIST[i];
-            socket.emit('Goal');
-          }
+          // ag=0; //zero gravity
+          // self.goal=true;
+          // if(self.x < left_goal.x)
+          // // Ball in left goal
+          //   self.L_goal=true;
+          // else
+          // // Ball in right goal
+          //   self.R_goal=true;
+          // for(var i in SOCKET_LIST){
+          // // Emit goal message to both players
+        	// 	var socket = SOCKET_LIST[i];
+          //   socket.emit('Goal');
+          // }
+          self.above = false;
         }
         else{
           // Ball hitting top of goal
@@ -400,7 +422,7 @@ var addUser = function(data,cb){
 		cb();
 	});
 }
-
+var update = false;
 var io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
     // When server is started, create a socket id number
@@ -419,18 +441,18 @@ io.sockets.on('connection', function(socket){
   				socket.emit('signInResponse',{success:false});
   			}
   		});
-	});
-	socket.on('signUp',function(data){
-		isUsernameTaken(data,function(res){
-			if(res){
-				socket.emit('signUpResponse',{success:false});
-			} else {
-				addUser(data,function(){
-					socket.emit('signUpResponse',{success:true});
-				});
-			}
-		});
-	});
+	  });
+  	socket.on('signUp',function(data){
+  		isUsernameTaken(data,function(res){
+  			if(res){
+  				socket.emit('signUpResponse',{success:false});
+  			} else {
+  				addUser(data,function(){
+  					socket.emit('signUpResponse',{success:true});
+  				});
+  			}
+  		});
+  	});
 
     socket.on('disconnect',function(){
         delete SOCKET_LIST[socket.id];
@@ -441,22 +463,31 @@ io.sockets.on('connection', function(socket){
   	// 		SOCKET_LIST[i].emit('addToChat',data.name + ': ' + data.value);
   	// 	}
   	// });
+    socket.on('startGame',function(){
+      update=true;
+    });
+    socket.on('P1ready',function(){
+      io.sockets.emit('Player1');
+    });
+    socket.on('P2ready',function(){
+      io.sockets.emit('Player2');
+    });
 });
 
 var initPack = {player:[],ball:[],};
 var removePack = {player:[],};
-
 initPack.ball.push(ball.getInitPack());
 setInterval(function(){
-  var pack = {
-    player:Player.update(),
-    // ball:Ball.update(),//
-    ball:updateBall(),
+  if(update){
+    var pack = {
+      player:Player.update(),
+      ball:updateBall(),
+    }
   }
   for(var i in SOCKET_LIST){
 		var socket = SOCKET_LIST[i];
 		socket.emit('init',initPack);
-		socket.emit('update',pack);
+	  socket.emit('update',pack);
 		socket.emit('remove',removePack);
 	}
 

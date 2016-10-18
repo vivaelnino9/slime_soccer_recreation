@@ -37,10 +37,11 @@ canvas#ctx, canvas#ctx-ui {
     display: block;
     auto;
 }
-p#play, p#goal {
+p#play-sign, p#goal {
     font-size: 50px;
     margin: 300px 700px 300px 650px;
     position: absolute;
+    display: none;
 }
 input#signDiv-username, input#signDiv-password {
     padding: 10px;
@@ -60,4 +61,18 @@ button#signDiv-signIn, button#signDiv-signUp {
     font-weight: 600;
     text-transform: uppercase;
     border-radius: 5px;
+}
+button#P1-ready-button, button#P2-ready-button {
+    display: none;
+    font-size: 30px;
+    position: absolute;
+    background-color: red;
+    color: white;
+}
+p#P1-go-sign, p#P2-go-sign {
+    display: none;
+    font-size: 30px;
+    position: absolute;
+    background-color: green;
+    color: white;
 }
