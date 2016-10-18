@@ -76,3 +76,10 @@ p#P1-go-sign, p#P2-go-sign {
     background-color: green;
     color: white;
 }
+p#P1-waiting-sign, p#P2-waiting-sign {
+    display: none;
+    font-size: 30px;
+    position: absolute;
+    background-color: white;
+    color: black;
+}

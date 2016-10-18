@@ -23,11 +23,13 @@
         <canvas id="ctx-goal" width="1400" height="600" style="position: absolute;"></canvas>
         <canvas id="ctx-eye" width="1400" height="600" style="position: absolute;"></canvas>
         <canvas id="ctx-eyeball" width="1400" height="600" style="position: absolute;"></canvas>
-        <p id=play-sign>PLAY!</p>
+        <p id="P1-waiting-sign" style="margin: 400px 450px 0px 125px;">Waiting</p>
+        <p id="P2-waiting-sign" style="margin: 400px 0px 0px 1225px;">Waiting</p>
         <button id="P1-ready-button" style="margin: 400px 450px 0px 100px;">Ready?</button>
         <p id="P1-go-sign" style="margin: 400px 450px 0px 125px;">GO!</p>
         <button id="P2-ready-button" style="margin: 400px 0px 0px 1200px;">Ready?</button>
         <p id="P2-go-sign" style="margin: 400px 0px 0px 1225px;">GO!</p>
+        <p id=play-sign>PLAY!</p>
         <p id=goal>GOAL!</p>
       </div>
       <div id="belowGame">
@@ -50,16 +52,18 @@
   	var signDivSignUp = document.getElementById('signDiv-signUp');
   	var signDivPassword = document.getElementById('signDiv-password');
 
+    var P1waitingSign = document.getElementById('P1-waiting-sign');
+    var P2waitingSign = document.getElementById('P2-waiting-sign');
     var P1readyButton = document.getElementById('P1-ready-button');
-    var P1goSign = document.getElementById('P1-go-sign');
     var P2readyButton = document.getElementById('P2-ready-button');
+    var P1goSign = document.getElementById('P1-go-sign');
     var P2goSign = document.getElementById('P2-go-sign');
     var playSign = document.getElementById('play-sign');
 
   	var username = null;
-    var P1ready = false;
-    var P2ready = false;
-
+    var P1ready = P2ready = false;
+    var p1 = p2 = false;
+    // ~~~~~~~~~~~Game Intro ~~~~~~~~~~~~
   	signDivSignIn.onclick = function(){
   		// socket.emit('signIn',{username:signDivUsername.value,password:signDivPassword.value});
       socket.emit('signIn',{username:'lucas',password:'rooney10'});
@@ -67,20 +71,26 @@
   	signDivSignUp.onclick = function(){
   		socket.emit('signUp',{username:signDivUsername.value,password:signDivPassword.value});
   	}
+
   	socket.on('signInResponse',function(data){
   		if(data.success){
   			signDiv.style.display = 'none';
   			gameDiv.style.display = 'inline-block';
   			username = data.username;
-        P1readyButton.style.display = 'inline-block';
-        P2readyButton.style.display = 'inline-block';
-        var size = 0, key;
-        for (player in Player.list)
-            size++;
-        if(size < 2)
+        var getSize = function(){
+          var size = 0;
+          for (var i in Player.list)
+              size++;
+          return size;
+        }
+        if(getSize() < 2){
           P2readyButton.disabled = true;
-        else
+          p1 = true;
+        }
+        else{
           P1readyButton.disabled = true;
+          p2 = true;
+        }
   		}
       else
   			alert("Sign in unsuccessul.");
@@ -93,17 +103,19 @@
   			alert("Sign up unsuccessul.");
   	});
 
-    socket.on('Player1',function(){
-      P1readyButton.style.display = 'none';
-      P1goSign.style.display = 'inline-block';
-      P1ready = true;
+    socket.on('Joined',function(data){
+      if(data.num == 1){
+        P1waitingSign.style.display = 'inline-block';
+        P2waitingSign.style.display = 'inline-block';
+      }
+      else{
+        P1waitingSign.style.display = 'none';
+        P2waitingSign.style.display = 'none';
+        P1readyButton.style.display = 'inline-block';
+        P2readyButton.style.display = 'inline-block';
+      }
     });
 
-    socket.on('Player2',function(data){
-      P2readyButton.style.display = 'none';
-      P2goSign.style.display = 'inline-block';
-      P2ready = true;
-    });
 
     P1readyButton.onclick = function(){
       socket.emit('P1ready');
@@ -112,16 +124,25 @@
       socket.emit('P2ready');
   	}
 
-    var timer = setInterval(function(){
-  		if(P1ready && P2ready){
-        socket.emit('startGame');
-        playSign.style.display = 'inline-block';
-        $("#play-sign").fadeOut(3000);
-        $("#P1-go-sign").fadeOut(3000);
-        $("#P2-go-sign").fadeOut(3000);
-        clearInterval(timer);
-      }
-  	},30);
+    socket.on('P1ready',function(){
+      P1readyButton.style.display = 'none';
+      P1goSign.style.display = 'inline-block';
+      P1ready = true;
+    });
+
+    socket.on('P2ready',function(data){
+      P2readyButton.style.display = 'none';
+      P2goSign.style.display = 'inline-block';
+      P2ready = true;
+    });
+
+    socket.on('startGame',function(){
+      playSign.style.display = 'inline-block';
+      $("#play-sign").fadeOut(3000);
+      $("#P1-go-sign").fadeOut(3000);
+      $("#P2-go-sign").fadeOut(3000);
+    })
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     //chat
     // var chatText = document.getElementById('chat-text');
@@ -145,6 +166,31 @@
   	// 	}
   	// 	chatInput.value = '';
   	// }
+
+    // ~~~~~~No Game Intro~~~~~~~
+    // signDivSignIn.onclick = function(){
+  	// 	// socket.emit('signIn',{username:signDivUsername.value,password:signDivPassword.value});
+    //   socket.emit('signIn',{username:'lucas',password:'rooney10'});
+  	// }
+  	// signDivSignUp.onclick = function(){
+  	// 	socket.emit('signUp',{username:signDivUsername.value,password:signDivPassword.value});
+  	// }
+  	// socket.on('signInResponse',function(data){
+  	// 	if(data.success){
+  	// 		signDiv.style.display = 'none';
+  	// 		gameDiv.style.display = 'inline-block';
+  	// 		username = data.username;
+    //     $("#play").fadeOut(6000);
+  	// 	} else
+  	// 		alert("Sign in unsuccessul.");
+  	// });
+  	// socket.on('signUpResponse',function(data){
+  	// 	if(data.success){
+  	// 		alert("Sign up successul.");
+  	// 	} else
+  	// 		alert("Sign up unsuccessul.");
+  	// });
+    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     //game
     ctx = document.getElementById("ctx").getContext("2d");

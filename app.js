@@ -115,10 +115,9 @@ var Player = function(param){
   return self;
 }
 Player.list = {};
-// Player.onConnect = function(socket){//
 Player.onConnect = function(socket,ball){
   // When player connects, create player and ball
-  var size = 0, key;
+  var size = 0, key, player;
     for (key in Player.list)
       size++;
   if(size<1){
@@ -137,14 +136,11 @@ Player.onConnect = function(socket,ball){
       y:HEIGHT,
   	});
   }
-  // var ball = Ball({//
-  //   x:(WIDTH/2),
-  //   y:(15),
-  // })
+  io.sockets.emit('Joined',{num:player.number});
+
   socket.emit('init',{
 		selfId:socket.id,
 		player:Player.getAllInitPack(),
-    // ball:Ball.getAllInitPack(),//
     ball:startBall(ball),
 	})
   Player.control(socket,player);
@@ -187,9 +183,8 @@ var Ball = function(param){
 	self.id = Math.random();
   self.mass = 0.1; //.1
   self.radius = 15; //15
-  self.restitution = -.9; //-1
+  self.restitution = -.9; //-.9
   self.A = Math.PI * self.radius * self.radius / (10000);
-  // self.spdX = -20;
   self.above = false;
   self.L_goal = false;
   self.R_goal = false;
@@ -273,14 +268,14 @@ var Ball = function(param){
     }
 
     if(self.L_goal){
-    //Ball in left goal
+    //Ball in left goal, keep ball in goal
       if((self.x + self.radius) > left_goal.x)
         self.spdX = -(Math.abs(self.spdX));
       if((self.y - self.radius) < left_goal.y)
         self.spdY = Math.abs(self.spdY);
     }
     if(self.R_goal){
-    //Ball in right goal
+    //Ball in right goal, keep ball in goal
       if((self.x - self.radius) < right_goal.x)
         self.spdX = Math.abs(self.spdX);
       if((self.y - self.radius) < right_goal.y)
@@ -351,16 +346,11 @@ var Ball = function(param){
       // Ball not above either goal
       self.above=false;
     }
-
-
-
+  //end physics
   }
 
-  // Ball.list[self.id] = self;//
-  // initPack.ball.push(self.getInitPack());//
 	return self;
 }
-// Ball.list = {};//
 var ball = Ball({
   x:(WIDTH/2),
   y:15,
@@ -378,23 +368,6 @@ updateBall = function(){
 	return pack;
 }
 
-// Ball.update = function(){//
-// 	var pack = [];
-// 	for(var i in Ball.list){
-// 		var ball = Ball.list[i];
-//     ball.physics();
-// 		ball.update();
-// 		pack.push(ball.getUpdatePack());
-// 	}
-// 	return pack;
-// }
-
-Ball.getAllInitPack = function(){
-	var ball = [];
-	for(var i in Ball.list)
-		ball.push(Ball.list[i].getInitPack());
-	return ball;
-}
 
 var DEBUG = true;
 
@@ -423,6 +396,8 @@ var addUser = function(data,cb){
 	});
 }
 var update = false;
+var P1ready = false;
+var P2ready = false;
 var io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
     // When server is started, create a socket id number
@@ -433,7 +408,6 @@ io.sockets.on('connection', function(socket){
   		isValidPassword(data,function(res){
   			if(res){
           // If successul signin, connect the player and give it socket id
-  				// Player.onConnect(socket);
           Player.onConnect(socket,ball);
   				socket.emit('signInResponse',{success:true,username:data.username,});
   			} else {
@@ -463,14 +437,13 @@ io.sockets.on('connection', function(socket){
   	// 		SOCKET_LIST[i].emit('addToChat',data.name + ': ' + data.value);
   	// 	}
   	// });
-    socket.on('startGame',function(){
-      update=true;
-    });
     socket.on('P1ready',function(){
-      io.sockets.emit('Player1');
+      io.sockets.emit('P1ready');
+      P1ready = true;
     });
     socket.on('P2ready',function(){
-      io.sockets.emit('Player2');
+      io.sockets.emit('P2ready');
+      P2ready = true;
     });
 });
 
@@ -486,6 +459,12 @@ setInterval(function(){
   }
   for(var i in SOCKET_LIST){
 		var socket = SOCKET_LIST[i];
+    if(P1ready && P2ready){
+      // if both players are ready, start game and allow updates
+      io.sockets.emit('startGame');
+      update = true;
+      P1ready = P2ready = false; // so startGame is emitted once
+    }
 		socket.emit('init',initPack);
 	  socket.emit('update',pack);
 		socket.emit('remove',removePack);
