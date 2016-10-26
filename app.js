@@ -122,7 +122,6 @@ var Player = function(param){
 
   Player.list[self.id] = self;
 
-	initPack.player.push(self.getInitPack());
   return self;
 }
 Player.list = {};
@@ -151,7 +150,7 @@ Player.onConnect = function(socket,ball){
   }
   io.sockets.emit('Joined',{num:player.number});
 
-  socket.emit('init',{
+  io.sockets.emit('init',{
 		selfId:socket.id,
 		player:Player.getAllInitPack(),
     ball:initBall(ball),
@@ -478,10 +477,11 @@ io.sockets.on('connection', function(socket){
     socket.on('disconnect',function(){
         if (Player.list[socket.id] != undefined)
           if(Player.list[socket.id].number == 1)
-            P1left = true;
+            P1left = true; // If player1 leaves
           else
-            P2left = true;
-        io.sockets.emit('remove',{id:socket.id});
+            P2left = true; // If player2 leaves
+        // Remove player that left
+        io.sockets.emit('remove',{id:socket.id}); 
         delete SOCKET_LIST[socket.id];
         Player.onDisconnect(socket);
     });
@@ -500,10 +500,8 @@ io.sockets.on('connection', function(socket){
     });
 });
 
-var initPack = {player:[],ball:[],};
-initPack.ball.push(ball.getInitPack());
 setInterval(function(){
-  if(update){
+  if(update){ // if update is allowed, prepare update pack
     var pack = {
       player:Player.update(),
       ball:updateBall(),
@@ -517,13 +515,7 @@ setInterval(function(){
       update = true;
       P1ready = P2ready = false; // so startGame is emitted once
     }
-    if (initPack.player.length > 0){
-      socket.emit('init',initPack);
-    }
-	  socket.emit('update',pack);
+	  socket.emit('update',pack); // send update pack
 	}
-
-  initPack.player = [];
-  initPack.ball = [];
 
 },35);

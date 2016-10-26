@@ -245,6 +245,7 @@
     var selfId = null;
 
     socket.on('init',function(data){
+      console.log(data);
   		if(data.selfId)
   			selfId = data.selfId;
 		  for(var i = 0 ; i < data.player.length; i++){
