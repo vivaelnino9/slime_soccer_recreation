@@ -43,6 +43,10 @@ var Entity = function(param){
 			self.id = param.id;
     if(param.number)
 			self.number = param.number;
+    if(param.spdX)
+      self.spdX = param.spdX;
+		if(param.spdY)
+			self.spdY = param.spdY;
 	}
 
   self.update = function(){
@@ -69,7 +73,13 @@ var Player = function(param){
 	self.score = 0;
 
   var super_update = self.update;
-	self.update = function(){
+	self.update = function(position){
+    if (position != null){
+      self.x = position.x;
+      self.y = position.y;
+      self.number = position.number;
+      self.score = position.score;
+    }
 		self.updateSpd();
 
 		super_update();
@@ -103,6 +113,7 @@ var Player = function(param){
   self.getUpdatePack = function(){
 		return {
 			id:self.id,
+      number:self.number,
 			x:self.x,
 			y:self.y,
 			score:self.score,
@@ -126,6 +137,7 @@ Player.onConnect = function(socket,ball){
       number:1,
       x:140,
       y:HEIGHT,
+      score:0,
   	});
   }
   else{
@@ -134,6 +146,7 @@ Player.onConnect = function(socket,ball){
       number:2,
       x:(WIDTH-140),
       y:HEIGHT,
+      score:0,
   	});
   }
   io.sockets.emit('Joined',{num:player.number});
@@ -141,7 +154,7 @@ Player.onConnect = function(socket,ball){
   socket.emit('init',{
 		selfId:socket.id,
 		player:Player.getAllInitPack(),
-    ball:startBall(ball),
+    ball:initBall(ball),
 	})
   Player.control(socket,player);
 }
@@ -165,15 +178,41 @@ Player.getAllInitPack = function(){
 }
 
 Player.onDisconnect = function(socket){
-	delete Player.list[socket.id];
-	removePack.player.push(socket.id);
+  delete Player.list[socket.id];
 }
 Player.update = function(){
 	var pack = [];
 	for(var i in Player.list){
 		var player = Player.list[i];
-		player.update();
-		pack.push(player.getUpdatePack());
+    if(P1left || P2left){
+      pack = {player:[],ball:[],};
+      var pposition = {
+        id:player.id,
+        number:1,
+        x:140,
+        y:HEIGHT,
+			  score:0,
+		  }
+      var bposition = {
+        x:(WIDTH/2),
+        y:15,
+        spdX:0,
+    		spdY:0,
+      }
+    player.update(pposition);
+    pack.player.push(pposition);
+    ball.update(bposition);
+    pack.ball.push(bposition);
+    P1left = P2left = update = false;
+    var socket = SOCKET_LIST[player.id];
+    socket.emit('update',pack);
+    socket.emit('prepareGame');
+    socket.emit('Joined',{num:player.number});
+    }
+    else{
+      player.update(null);
+  		pack.push(player.getUpdatePack());
+    }
 	}
 	return pack;
 }
@@ -190,7 +229,13 @@ var Ball = function(param){
   self.R_goal = false;
 
   var super_update = self.update;
-	self.update = function(){
+	self.update = function(position){
+    if (position != null){
+      self.x = position.x;
+      self.y = position.y;
+      self.spdX = position.spdX;
+  		self.spdY = position.spdY;
+    }
 		super_update();
     for(var i in Player.list){
 			var p = Player.list[i];
@@ -355,7 +400,7 @@ var ball = Ball({
   x:(WIDTH/2),
   y:15,
 })
-startBall = function(ball){
+initBall = function(ball){
 	var pack = [];
 	pack.push(ball.getInitPack());
 	return pack;
@@ -363,7 +408,7 @@ startBall = function(ball){
 updateBall = function(){
   var pack = [];
   ball.physics();
-	ball.update();
+	ball.update(null);
 	pack.push(ball.getUpdatePack());
 	return pack;
 }
@@ -398,6 +443,8 @@ var addUser = function(data,cb){
 var update = false;
 var P1ready = false;
 var P2ready = false;
+var P1left = false;
+var P2left = false;
 var io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
     // When server is started, create a socket id number
@@ -409,10 +456,10 @@ io.sockets.on('connection', function(socket){
   			if(res){
           // If successul signin, connect the player and give it socket id
           Player.onConnect(socket,ball);
-  				socket.emit('signInResponse',{success:true,username:data.username,});
+  				socket.emit('prepareGame',{username:data.username,});
   			} else {
           // If unsuccessul, tell player signin was unsuccessul
-  				socket.emit('signInResponse',{success:false});
+  				socket.emit('unsuccessulSignIn',{success:false});
   			}
   		});
 	  });
@@ -429,6 +476,12 @@ io.sockets.on('connection', function(socket){
   	});
 
     socket.on('disconnect',function(){
+        if (Player.list[socket.id] != undefined)
+          if(Player.list[socket.id].number == 1)
+            P1left = true;
+          else
+            P2left = true;
+        io.sockets.emit('remove',{id:socket.id});
         delete SOCKET_LIST[socket.id];
         Player.onDisconnect(socket);
     });
@@ -448,7 +501,6 @@ io.sockets.on('connection', function(socket){
 });
 
 var initPack = {player:[],ball:[],};
-var removePack = {player:[],};
 initPack.ball.push(ball.getInitPack());
 setInterval(function(){
   if(update){
@@ -465,13 +517,13 @@ setInterval(function(){
       update = true;
       P1ready = P2ready = false; // so startGame is emitted once
     }
-		socket.emit('init',initPack);
+    if (initPack.player.length > 0){
+      socket.emit('init',initPack);
+    }
 	  socket.emit('update',pack);
-		socket.emit('remove',removePack);
 	}
 
   initPack.player = [];
-	removePack.player = [];
   initPack.ball = [];
 
 },35);
