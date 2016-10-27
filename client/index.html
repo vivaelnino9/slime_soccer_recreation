@@ -245,7 +245,6 @@
     var selfId = null;
 
     socket.on('init',function(data){
-      console.log(data);
   		if(data.selfId)
   			selfId = data.selfId;
 		  for(var i = 0 ; i < data.player.length; i++){
@@ -257,7 +256,7 @@
   		}
 	  });
     socket.on('update',function(data){
-      if(data != null){
+      if(data.player != undefined){
         for(var i = 0 ; i < data.player.length; i++){
     			var pack = data.player[i];
     			var p = Player.list[pack.id];
@@ -273,7 +272,7 @@
     			}
     		}
       }
-      if(data != null){
+      if(data.ball != undefined){
         for(var i = 0 ; i < data.ball.length; i++){
     			var pack = data.ball[i];
     			var b = Ball.list[data.ball[i].id];

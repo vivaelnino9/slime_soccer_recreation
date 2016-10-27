@@ -180,11 +180,10 @@ Player.onDisconnect = function(socket){
   delete Player.list[socket.id];
 }
 Player.update = function(){
-	var pack = [];
+	var pack = {player:[],ball:[]};
 	for(var i in Player.list){
 		var player = Player.list[i];
     if(P1left || P2left){
-      pack = {player:[],ball:[],};
       var pposition = {
         id:player.id,
         number:1,
@@ -210,7 +209,9 @@ Player.update = function(){
     }
     else{
       player.update(null);
-  		pack.push(player.getUpdatePack());
+  		pack.player.push(player.getUpdatePack());
+      var socket = SOCKET_LIST[player.id];
+      socket.emit('update',pack);
     }
 	}
 	return pack;
@@ -372,11 +373,7 @@ var Ball = function(param){
           // else
           // // Ball in right goal
           //   self.R_goal=true;
-          // for(var i in SOCKET_LIST){
-          // // Emit goal message to both players
-        	// 	var socket = SOCKET_LIST[i];
-          //   socket.emit('Goal');
-          // }
+          // io.sockets.emit('Goal');
           self.above = false;
         }
         else{
@@ -405,11 +402,15 @@ initBall = function(ball){
 	return pack;
 }
 updateBall = function(){
-  var pack = [];
+  var pack = {ball:[]};
   ball.physics();
 	ball.update(null);
-	pack.push(ball.getUpdatePack());
-	return pack;
+	pack.ball.push(ball.getUpdatePack());
+  for (var i in Player.list){
+    var player = Player.list[i];
+    var socket = SOCKET_LIST[player.id];
+    socket.emit('update',pack);
+  }
 }
 
 
@@ -481,7 +482,7 @@ io.sockets.on('connection', function(socket){
           else
             P2left = true; // If player2 leaves
         // Remove player that left
-        io.sockets.emit('remove',{id:socket.id}); 
+        io.sockets.emit('remove',{id:socket.id});
         delete SOCKET_LIST[socket.id];
         Player.onDisconnect(socket);
     });
@@ -501,11 +502,9 @@ io.sockets.on('connection', function(socket){
 });
 
 setInterval(function(){
-  if(update){ // if update is allowed, prepare update pack
-    var pack = {
-      player:Player.update(),
-      ball:updateBall(),
-    }
+  if(update){ // if update is allowed, update each player and the ball
+    Player.update();
+    updateBall();
   }
   for(var i in SOCKET_LIST){
 		var socket = SOCKET_LIST[i];
@@ -515,7 +514,6 @@ setInterval(function(){
       update = true;
       P1ready = P2ready = false; // so startGame is emitted once
     }
-	  socket.emit('update',pack); // send update pack
 	}
 
 },35);
