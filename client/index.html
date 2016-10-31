@@ -75,6 +75,8 @@
   	}
 
     socket.on('prepareGame',function(data){
+      document.getElementById('P1score').innerHTML = 0;
+      document.getElementById('P2score').innerHTML = 0;
 			signDiv.style.display = 'none';
 			gameDiv.style.display = 'inline-block';
       var number;
