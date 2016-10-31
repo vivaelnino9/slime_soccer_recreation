@@ -69,7 +69,7 @@ var Player = function(param){
 	self.pressingLeft = false;
 	self.pressingUp = false;
 	self.pressingDown = false;
-	self.maxSpd = 10;
+	self.maxSpd = 5;
 	self.score = 0;
 
   var super_update = self.update;
@@ -184,6 +184,7 @@ Player.update = function(){
 	for(var i in Player.list){
 		var player = Player.list[i];
     if(P1left || P2left){
+    // If someone quits, make whichever player is left 1st player and restart
       var pposition = {
         id:player.id,
         number:1,
@@ -207,11 +208,57 @@ Player.update = function(){
     socket.emit('prepareGame');
     socket.emit('Joined',{num:player.number});
     }
+    else if (P1goal || P2goal){
+    // If someone scores, increase their score and reset player/ball locations
+      if(player.number == 1 && P1goal){
+      // Player 1 scores
+        player.score += 1;
+        io.sockets.emit('Goal',{number:1,score:player.score});
+      }
+      else{
+        for (var i in Player.list){
+          player = Player.list[i];
+          if (player.number == 2 && P2goal){
+          // Player 2 scores
+            player.score += 1;
+            io.sockets.emit('Goal',{number:2,score:player.score});
+          }
+        }
+      }
+      for(var i in Player.list){
+    		player = Player.list[i];
+        var pposition = {
+            id:player.id,
+            number:player.number,
+            score:player.score,
+            y:HEIGHT,
+        }
+        pposition.x = player.number == 1 ? 140 : (WIDTH-140)
+        var bposition = {
+            x:(WIDTH/2),
+            y:15,
+            spdX:0,
+            spdY:0,
+        }
+        player.update(pposition);
+        pack.player.push(pposition);
+        ball.update(bposition);
+        pack.ball.push(bposition);
+        socket = SOCKET_LIST[player.id];
+        socket.emit('update',pack);
+      P1goal = P2goal = update = false;
+      P1ready = P2ready = true;
+      }
+    }
     else{
-      player.update(null);
-  		pack.player.push(player.getUpdatePack());
-      var socket = SOCKET_LIST[player.id];
-      socket.emit('update',pack);
+    // If neither a goal or someone quitting, perform regular updates
+      for(var i in Player.list){
+    		player = Player.list[i];
+        player.update(null); // update player
+    		pack.player.push(player.getUpdatePack());
+        socket = SOCKET_LIST[player.id];
+        socket.emit('update',pack); // send updates to each player
+      }
     }
 	}
 	return pack;
@@ -312,20 +359,20 @@ var Ball = function(param){
       goal:false,
     }
 
-    if(self.L_goal){
-    //Ball in left goal, keep ball in goal
-      if((self.x + self.radius) > left_goal.x)
-        self.spdX = -(Math.abs(self.spdX));
-      if((self.y - self.radius) < left_goal.y)
-        self.spdY = Math.abs(self.spdY);
-    }
-    if(self.R_goal){
-    //Ball in right goal, keep ball in goal
-      if((self.x - self.radius) < right_goal.x)
-        self.spdX = Math.abs(self.spdX);
-      if((self.y - self.radius) < right_goal.y)
-        self.spdY = Math.abs(self.spdY);
-    }
+    // if(self.L_goal){
+    // //Ball in left goal, keep ball in goal
+    //   if((self.x + self.radius) > left_goal.x)
+    //     self.spdX = -(Math.abs(self.spdX));
+    //   if((self.y - self.radius) < left_goal.y)
+    //     self.spdY = Math.abs(self.spdY);
+    // }
+    // if(self.R_goal){
+    // //Ball in right goal, keep ball in goal
+    //   if((self.x - self.radius) < right_goal.x)
+    //     self.spdX = Math.abs(self.spdX);
+    //   if((self.y - self.radius) < right_goal.y)
+    //     self.spdY = Math.abs(self.spdY);
+    // }
     if (self.y < self.radius){
     // Ball hitting the ceiling
       self.spdY *= self.restitution;
@@ -366,15 +413,17 @@ var Ball = function(param){
         if(!self.above){
           // Ball in either goal
           // ag=0; //zero gravity
-          // self.goal=true;
-          // if(self.x < left_goal.x)
-          // // Ball in left goal
-          //   self.L_goal=true;
-          // else
-          // // Ball in right goal
-          //   self.R_goal=true;
-          // io.sockets.emit('Goal');
-          self.above = false;
+          self.goal=true;
+          if(self.x < left_goal.x){
+          // Ball in left goal
+            self.L_goal=true;
+            P2goal = true;
+          }
+          else{
+          // Ball in right goal
+            self.R_goal=true;
+            P1goal = true;
+          }
         }
         else{
           // Ball hitting top of goal
@@ -445,6 +494,8 @@ var P1ready = false;
 var P2ready = false;
 var P1left = false;
 var P2left = false;
+var P1goal = false;
+var P2goal = false;
 var io = require('socket.io')(serv,{});
 io.sockets.on('connection', function(socket){
     // When server is started, create a socket id number

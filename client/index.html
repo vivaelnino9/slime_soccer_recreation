@@ -29,6 +29,8 @@
         <p id="P1-go-sign" style="margin: 400px 450px 0px 125px;">GO!</p>
         <button id="P2-ready-button" style="margin: 400px 0px 0px 1200px;">Ready?</button>
         <p id="P2-go-sign" style="margin: 400px 0px 0px 1225px;">GO!</p>
+        <p id="P1score" style="margin: 100px 450px 0px 125px; color:white;position: absolute; font-size:40px;">0</p>
+        <p id="P2score" style="margin: 100px 0px 0px 1225px; color:white;position: absolute; font-size:40px;">0</p>
         <p id=play-sign>PLAY!</p>
         <p id=goal>GOAL!</p>
       </div>
@@ -142,6 +144,19 @@
       P1readyButton.disabled = false;
       P2readyButton.disabled = false;
     })
+
+    socket.on('Goal',function(data){
+      $("#goal").fadeIn(3000);
+      $("#goal").fadeOut(3000);
+      var id,score;
+      if (data.number == 1)
+        id = 'P1score';
+      else{
+        id = 'P2score';
+      }
+      document.getElementById(id).innerHTML = data.score;
+    });
+
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     //chat
@@ -290,9 +305,6 @@
   		delete Player.list[data.id];
   	});
 
-    socket.on('Goal',function(){
-      $("#goal").fadeIn(3000);
-    });
 
     setInterval(function(){
   		if(!selfId)
