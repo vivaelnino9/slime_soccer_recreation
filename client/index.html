@@ -313,30 +313,19 @@
       ctx.restore();
     }
     var drawPlayer = function(x,y,num){
-      var color = '';
       ctxUi.beginPath();
       ctxUi.arc(x, y, 55, 0, Math.PI, true);
       ctxUi.closePath();
       ctxUi.lineWidth = 5;
-      if(num<2)
-        color = '#01ffff';
-      else
-        color = '#ff001a';
+      var color = num < 2 ? '#01ffff' : '#ff001a';
       ctxUi.fillStyle = color ;
       ctxUi.fill();
       ctxUi.strokeStyle = color;
       ctxUi.stroke();
     }
     var drawEye = function(x,y,num){
-      var Ex = Ey = null;
-      if(num<2){
-        Ex = (x+32);
-        Ey = (y-32);
-      }
-      else{
-        Ex = (x-32);
-        Ey = (y-32);
-      }
+      var Ex = num < 2 ? (x+32) : (x-32);
+      var Ey = (y-32);
       ctxE.beginPath();
       ctxE.arc(Ex, Ey, 12, 0, 2 * Math.PI);
       ctxE.fillStyle = 'white';
