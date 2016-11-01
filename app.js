@@ -24,6 +24,7 @@ var frameDelay = frameRate * 1000; // ms
 var Cd = 0.47;  // Dimensionless
 var rho = 1.22; // kg / m^3
 var ag = 9.81;  // m / s^2
+var gravity = .2;
 
 var Entity = function(param){
   var self = {
@@ -53,8 +54,21 @@ var Entity = function(param){
 		self.updatePosition();
 	}
 	self.updatePosition = function(){
-		self.x += self.spdX;
-		self.y += self.spdY;
+    if(self.id != 'ball'){
+      self.spdY += gravity;
+      self.x += self.spdX;
+      self.y += self.spdY;
+      if(self.y > HEIGHT)
+      {
+          self.y = HEIGHT;
+          self.spdY = 0.0;
+          self.onGround = true;
+      }
+    }
+    else{
+      self.x += self.spdX;
+      self.y += self.spdY;
+    }
 	}
 	self.getDistance = function(pt){
 		return Math.sqrt(Math.pow(self.x-pt.x,2) + Math.pow(self.y-pt.y,2));
@@ -67,8 +81,7 @@ var Player = function(param){
   self.radius = 55;
 	self.pressingRight = false;
 	self.pressingLeft = false;
-	self.pressingUp = false;
-	self.pressingDown = false;
+  self.onGround = true;
 	self.maxSpd = 5;
 	self.score = 0;
 
@@ -92,13 +105,6 @@ var Player = function(param){
       self.spdX = -self.maxSpd;
 		else
 			self.spdX = 0;
-
-		if(self.pressingUp && self.y - self.maxSpd > self.radius)
-			self.spdY = -self.maxSpd;
-		else if(self.pressingDown && self.y + self.maxSpd < HEIGHT + 1)
-			self.spdY = self.maxSpd;
-		else
-			self.spdY = 0;
 	}
 
   self.getInitPack = function(){
@@ -163,11 +169,19 @@ Player.control = function(socket,player){
 			player.pressingLeft = data.state;
 		else if(data.inputId === 'right')
 			player.pressingRight = data.state;
-		else if(data.inputId === 'up')
-      player.pressingUp = data.state;
-		else if(data.inputId === 'down')
-			player.pressingDown = data.state;
 	});
+  socket.on('startJump',function(){
+    // While jump button is pressed, increase vertical velocity
+    if(player.onGround){
+      player.spdY = -8.0;
+      player.onGround = false;
+    }
+  });
+  socket.on('endJump',function(){
+    // When jump button is released, limit velocity
+    if(player.spdY < -4.0)
+      player.spdY = -4.0;
+  });
 }
 Player.getAllInitPack = function(){
 	var players = [];
@@ -266,7 +280,7 @@ Player.update = function(){
 // ball
 var Ball = function(param){
   var self = Entity(param);
-	self.id = Math.random();
+	self.id = 'ball';
   self.mass = 0.1; //.1
   self.radius = 15; //15
   self.restitution = -.9; //-.9
@@ -286,13 +300,13 @@ var Ball = function(param){
 		super_update();
     for(var i in Player.list){
 			var p = Player.list[i];
-			if( (self.getDistance(p) < (p.radius + self.radius)) && (p.y > (self.y - self.radius)) ){
+			if( (self.getDistance(p) < (p.radius + self.radius + 5)) && (p.y > (self.y - self.radius)) ){
         // if the ball hits the player
         if(self.x < (p.x - 15)){
         // if the ball hits the left side of the player
           self.spdX = -(Math.abs(self.spdX) + 2);
           if(self.x > (p.x - 35))
-            self.spdY = -(Math.abs(self.spdY) + .6);
+            self.spdY = -(Math.abs(self.spdY) + .5);
           else if(self.x < (p.x - 35))
             self.spdY = -(Math.abs(self.spdY) + .1);
         }
@@ -300,12 +314,12 @@ var Ball = function(param){
         // if the ball hits the right side of the player
           self.spdX = (Math.abs(self.spdX) + 2);
           if(self.x < (p.x + 35))
-            self.spdY = -(Math.abs(self.spdY) + .6);
+            self.spdY = -(Math.abs(self.spdY) + .5);
           else if(self.x > (p.x + 35))
             self.spdY = -(Math.abs(self.spdY) + .1);
         }
         else
-          self.spdY = -(Math.abs(self.spdY) + .4);
+          self.spdY = -(Math.abs(self.spdY) + .2);
 
         self.spdY = -(Math.abs(self.spdY) + .4);
 			}
@@ -393,12 +407,12 @@ var Ball = function(param){
       self.spdX *= self.restitution;
       self.x = self.radius;
     }
-    if(self.getDistance(left_goal)<15){
-      // Ball hitting left crossbar
+    if(self.getDistance(left_goal)<17){
+    // Ball hitting left crossbar
       self.spdX=Math.abs(self.spdX);
     }
-    if(self.getDistance(right_goal)<15){
-      // Ball hitting right crossbar
+    if(self.getDistance(right_goal)<17){
+    // Ball hitting right crossbar
       self.spdX=-(Math.abs(self.spdX));
     }
     if (self.x < left_goal.x || self.x > right_goal.x){
