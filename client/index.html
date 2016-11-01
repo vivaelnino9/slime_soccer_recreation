@@ -33,6 +33,7 @@
         <p id="P2score" style="margin: 100px 0px 0px 1225px; color:white;position: absolute; font-size:40px;">0</p>
         <p id=play-sign>PLAY!</p>
         <p id=goal>GOAL!</p>
+        <p id=timer style="margin: 100px 675px 0px 675px; color:white;position: absolute; font-size:40px;">05:00</p>
       </div>
       <div id="belowGame">
 		    <div id="chat-text">
@@ -61,6 +62,7 @@
     var P1goSign = document.getElementById('P1-go-sign');
     var P2goSign = document.getElementById('P2-go-sign');
     var playSign = document.getElementById('play-sign');
+    var timer = document.getElementById('timer');
 
   	var username = null;
     var P1ready = P2ready = false;
@@ -138,25 +140,30 @@
       P2ready = true;
     });
 
-    socket.on('startGame',function(){
-      playSign.style.display = 'inline-block';
-      $("#play-sign").fadeOut(3000);
-      $("#P1-go-sign").fadeOut(3000);
-      $("#P2-go-sign").fadeOut(3000);
+    socket.on('startGame',function(data){
+      if(data.started){
+        playSign.style.display = 'inline-block';
+        $("#play-sign").fadeOut(2000);
+        $("#P1-go-sign").fadeOut(2000);
+        $("#P2-go-sign").fadeOut(2000);
+      }
       P1readyButton.disabled = false;
       P2readyButton.disabled = false;
     })
 
     socket.on('Goal',function(data){
-      $("#goal").fadeIn(3000);
-      $("#goal").fadeOut(3000);
-      var id,score;
-      if (data.number == 1)
-        id = 'P1score';
-      else{
-        id = 'P2score';
+      if (!data.restart){
+        $("#goal").fadeIn(1000);
+        $("#goal").fadeOut(1000);
       }
-      document.getElementById(id).innerHTML = data.score;
+      var id,score;
+      id = data.number == 1 ? 'P1score' : 'P2score';
+      score = data.restart ? 0 : data.score
+      document.getElementById(id).innerHTML = score;
+    });
+
+    socket.on('Timer',function(data){
+      timer.innerHTML = data.min + ":" + data.sec;
     });
 
     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

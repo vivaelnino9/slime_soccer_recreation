@@ -198,7 +198,9 @@ Player.update = function(){
 	for(var i in Player.list){
 		var player = Player.list[i];
     if(P1left || P2left){
-    // If someone quits, make whichever player is left 1st player and restart
+    // If someone quits, end game and make whichever player is left 1st player
+    // and restart
+      endGame = true;
       var pposition = {
         id:player.id,
         number:1,
@@ -222,7 +224,7 @@ Player.update = function(){
     socket.emit('prepareGame');
     socket.emit('Joined',{num:player.number});
     }
-    else if (P1goal || P2goal){
+    else if (P1goal || P2goal || endGame){
     // If someone scores, increase their score and reset player/ball locations
       if(player.number == 1 && P1goal){
       // Player 1 scores
@@ -248,6 +250,10 @@ Player.update = function(){
             y:HEIGHT,
         }
         pposition.x = player.number == 1 ? 140 : (WIDTH-140)
+        if (endGame){
+          pposition.score = 0;
+          io.sockets.emit('Goal',{number:player.number,restart:true});
+        }
         var bposition = {
             x:(WIDTH/2),
             y:15,
@@ -407,23 +413,23 @@ var Ball = function(param){
       self.spdX *= self.restitution;
       self.x = self.radius;
     }
-    if(self.getDistance(left_goal)<17){
+    if(self.getDistance(left_goal)<15){
     // Ball hitting left crossbar
       self.spdX=Math.abs(self.spdX);
     }
-    if(self.getDistance(right_goal)<17){
+    if(self.getDistance(right_goal)<15){
     // Ball hitting right crossbar
       self.spdX=-(Math.abs(self.spdX));
     }
     if (self.x < left_goal.x || self.x > right_goal.x){
     // Ball left of left_goal OR right of right_goal
-      if((self.y + self.radius) < left_goal.y){
+      if((self.y + 8) < left_goal.y){
       // Ball above either goal
         if(!self.above){
           self.above=true;
         }
       }
-      if((self.y + self.radius) > left_goal.y){
+      if((self.y + 10) > left_goal.y){
         if(!self.above){
           // Ball in either goal
           // ag=0; //zero gravity
@@ -504,6 +510,7 @@ var addUser = function(data,cb){
 	});
 }
 var update = false;
+var endGame = false;
 var P1ready = false;
 var P2ready = false;
 var P1left = false;
@@ -565,7 +572,33 @@ io.sockets.on('connection', function(socket){
       P2ready = true;
     });
 });
-
+var timerOn = false;
+function startTimer(duration) {
+  timerOn = true; // Timer is on
+  var time = duration, minutes, seconds;
+  var gameTimer = setInterval(function () {
+    minutes = parseInt(time / 60, 10);
+    seconds = parseInt(time % 60, 10);
+    // Parse time to base 10 to display time as [min/min:sec/sec]
+    minutes = minutes < 10 ? "0" + minutes : minutes;
+    seconds = seconds < 10 ? "0" + seconds : seconds;
+    if (endGame){
+    // If some quits and game needs to end, restart clock and clear timer
+      minutes = "05";
+      seconds = "00";
+      timerOn = false;
+      clearInterval(gameTimer);
+    }
+    for(var i in SOCKET_LIST){
+    // Send the game time to players
+  		var socket = SOCKET_LIST[i];
+      socket.emit('Timer',{min:minutes,sec:seconds});
+    }
+    if (--time < 0)
+    // When timer goes off, end the game
+      endGame = true;
+  }, 1000);
+}
 setInterval(function(){
   if(update){ // if update is allowed, update each player and the ball
     Player.update();
@@ -575,7 +608,16 @@ setInterval(function(){
 		var socket = SOCKET_LIST[i];
     if(P1ready && P2ready){
       // if both players are ready, start game and allow updates
-      io.sockets.emit('startGame');
+      if(!timerOn){
+        endGame = false;
+        var fiveMinutes = 5*60; // 5 minutes
+        startTimer(fiveMinutes); // Start game timer
+        io.sockets.emit('startGame',{started:true});
+      }
+      else
+        io.sockets.emit('startGame',{started:false});
+      // Above if statement used to display PLAY! only if the game just started
+      // and not after goal is scored
       update = true;
       P1ready = P2ready = false; // so startGame is emitted once
     }
